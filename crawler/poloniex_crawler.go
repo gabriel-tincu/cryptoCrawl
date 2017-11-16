@@ -15,11 +15,13 @@ var (
 	poloniexPairMapping = map[string]string{
 		"USDT_ETH": ETHUSD,
 		"USDT_BTC": BTCUSD,
-	}
+	},
 )
 
 const (
 	poloniexURL = "wss://api.poloniex.com"
+	modify = "orderBookModify"
+	remove = "orderBookRemove"
 )
 
 type PoloniexCrawler struct {
@@ -61,7 +63,7 @@ func (c *PoloniexCrawler) Loop() {
 			log.Fatalf("error subscribing to channel: %s", err)
 		}
 	}
-	log.Infof("allsubscriptions done")
+	log.Infof("all subscriptions done")
 	sigChan := make(chan os.Signal, 1)
 	signal.Notify(sigChan, os.Interrupt)
 	select {
@@ -74,18 +76,30 @@ func (c *PoloniexCrawler) Loop() {
 }
 
 func (c *PoloniexCrawler) handle(args wamp.List, kwargs wamp.Dict, details wamp.Dict) {
-	written := false
 	for _, el := range args {
 		tel := el.(map[string]interface{})
-		if tel["type"] != "orderBookRemove" {
-			if !written {
-				fmt.Println(details["pair"])
-				written = true
-			}
-			fmt.Println(tel)
+		switch tel["type"] {
+		case trade:
+			t := tel["data"].(map[string]interface{})
+			
 		}
 	}
-	if !written {
-		log.Debug("no data of interest received")
-	}
+}
+
+type Modify struct {
+	Amount float64 `json:"amount"`
+	Type   string  `json:"type"`
+	Price  string  `json:"rate"`
+}
+
+type Trade struct {
+	Price  float64   `json:"rate"`
+	Type   string    `json:"type"`
+	Amount float64   `json:"amount"`
+	Date   time.Time `json:"date"`
+}
+
+type Remove struct {
+	Type  string `json:"type"`
+	Price string `json:"rate"`
 }

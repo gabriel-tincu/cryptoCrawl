@@ -22,6 +22,14 @@ const (
 	kraken = "kraken"
 )
 
+type CancelMeasurement struct {
+	Meta  string
+	Type  string
+	Pair  string
+	Price string
+	Time  int64
+}
+
 type OrderMeasurement struct {
 	Meta string
 	// buy or sell
