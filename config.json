@@ -1,0 +1,11 @@
+{
+  "crawlers": [
+    {
+      "name":"kraken",
+      "pairs": [
+        "XETHZUSD",
+        "XXBTZUSD"
+      ]
+    }
+  ]
+}
