@@ -15,7 +15,7 @@ const (
 )
 
 var (
-	pairMapping = map[string]string{
+	krakenPairMapping = map[string]string{
 		krakenapi.XETHZUSD: ETHUSD,
 		krakenapi.XETHZEUR: ETHEUR,
 		krakenapi.XXBTZUSD: BTCUSD,
@@ -24,21 +24,28 @@ var (
 )
 
 type KrakenCrawler struct {
-	pairs  []string
-	state  sync.Map
-	client krakenapi.KrakenApi
-	writer DataWriter
+	pairs    []string
+	state    sync.Map
+	client   krakenapi.KrakenApi
+	writer   DataWriter
+	timeDiff int64
 }
 
-func New(writer DataWriter, pairs []string) KrakenCrawler {
+func NewKraken(writer DataWriter, pairs []string) KrakenCrawler {
 	log.Debugf("creating new kraken crawler for pairs %+v", pairs)
 	cli := krakenapi.New("", "")
-	return KrakenCrawler{
+	cl := KrakenCrawler{
 		pairs:  pairs,
 		client: *cli,
 		writer: writer,
 		state:  sync.Map{},
 	}
+	there, err := cl.client.Time()
+	if err != nil {
+		panic(err)
+	}
+	cl.timeDiff = there.Unixtime - time.Now().Unix()
+	return cl
 }
 
 func (c *KrakenCrawler) Loop() {
@@ -64,7 +71,7 @@ func (c *KrakenCrawler) Loop() {
 
 func (c *KrakenCrawler) ReadTrades(symbol string, errChan chan error) {
 	log.Debugf("reading trade data for pair %s", symbol)
-	pairName := pairMapping[symbol]
+	pairName := krakenPairMapping[symbol]
 	if pairName == "" {
 		err := fmt.Errorf("unable to find mapping for symbol %s", symbol)
 		errChan <- err
@@ -90,7 +97,7 @@ func (c *KrakenCrawler) ReadTrades(symbol string, errChan chan error) {
 			Pair:      pairName,
 			Amount:    t.VolumeFloat,
 			Price:     t.PriceFloat,
-			Timestamp: t.Time,
+			Timestamp: t.Time - c.timeDiff,
 		}
 		if t.Buy {
 			m.TradeType = buy
@@ -113,7 +120,7 @@ func (c *KrakenCrawler) ReadTrades(symbol string, errChan chan error) {
 
 func (c *KrakenCrawler) ReadDepth(symbol string, errChan chan error) {
 	log.Debugf("reading order data for pair %s", symbol)
-	pairName := pairMapping[symbol]
+	pairName := krakenPairMapping[symbol]
 	if pairName == "" {
 		err := fmt.Errorf("unable to find mapping for symbol %s", symbol)
 		errChan <- err
@@ -144,7 +151,7 @@ func (c *KrakenCrawler) ReadDepth(symbol string, errChan chan error) {
 		if a.Ts > askTime {
 			data := OrderMeasurement{
 				Meta:      order,
-				Timestamp: a.Ts,
+				Timestamp: a.Ts - c.timeDiff,
 				Amount:    a.Amount,
 				Price:     a.Price,
 				Pair:      pairName,
@@ -165,8 +172,8 @@ func (c *KrakenCrawler) ReadDepth(symbol string, errChan chan error) {
 		if b.Ts > bidTime {
 			if b.Ts > askTime {
 				data := OrderMeasurement{
-					Meta: order,
-					Timestamp: b.Ts,
+					Meta:      order,
+					Timestamp: b.Ts - c.timeDiff,
 					Amount:    b.Amount,
 					Price:     b.Price,
 					Pair:      pairName,

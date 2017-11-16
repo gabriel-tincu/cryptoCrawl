@@ -1,7 +1,7 @@
 package main
 
 import (
-	"cryproCrawl/crawler"
+	"cryptoCrawl/crawler"
 	"encoding/json"
 	"flag"
 	"fmt"
@@ -42,7 +42,8 @@ func main() {
 	flag.Parse()
 	cfg := getConfig(configFile)
 	c := cfg.CrawlerCFGS[0]
-	fmt.Printf("%+v\n", cfg)
-	cl := crawler.New(BasicWriter{}, c.Pairs)
-	cl.Loop()
+	_ = c
+	pol := crawler.NewPoloniex(BasicWriter{}, []string{})
+	pol.Loop()
+	//cl.Loop()
 }

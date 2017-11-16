@@ -13,9 +13,9 @@ const (
 	market = "marker"
 	limit  = "limit"
 
-	buy  = "buy"
-	sell = "sell"
-
+	buy   = "buy"
+	sell  = "sell"
+	pair  = "pair"
 	trade = "trade"
 	order = "order"
 
@@ -47,6 +47,8 @@ type TradeMeasurement struct {
 	TransactionType string `json:"type"`
 	Timestamp       int64  `json:"time"`
 }
+
+type CrawlerFactory func(writer DataWriter, pairs []string) (Crawler, error)
 
 type Crawler interface {
 	Loop()
