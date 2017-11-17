@@ -43,7 +43,10 @@ func main() {
 	cfg := getConfig(configFile)
 	c := cfg.CrawlerCFGS[0]
 	_ = c
-	pol := crawler.NewPoloniex(BasicWriter{}, []string{})
+	pol, err := crawler.NewPoloniex(BasicWriter{}, []string{})
+	if err != nil {
+		panic(err)
+	}
 	pol.Loop()
 	//cl.Loop()
 }

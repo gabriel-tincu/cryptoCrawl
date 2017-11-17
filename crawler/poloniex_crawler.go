@@ -41,7 +41,7 @@ type PoloniexCrawler struct {
 	timeDiff int64
 }
 
-func NewPoloniex(writer DataWriter, pairs []string) PoloniexCrawler {
+func NewPoloniex(writer DataWriter, pairs []string) (*PoloniexCrawler, error) {
 	cfg := client.ClientConfig{
 		Realm:           "realm1",
 		Logger:          log.New(),
@@ -49,16 +49,16 @@ func NewPoloniex(writer DataWriter, pairs []string) PoloniexCrawler {
 	}
 	cli, err := client.ConnectNet(poloniexURL, cfg)
 	if err != nil {
-		log.Fatalf("error creating wamp client: %s", err)
+		return nil, fmt.Errorf("error creating wamp client: %s", err)
 	}
 	log.Infof("created WAMP client")
-	return PoloniexCrawler{
+	return &PoloniexCrawler{
 		writer:   writer,
 		pairs:    pairs,
 		cli:      *cli,
 		state:    sync.Map{},
 		timeDiff: 0,
-	}
+	}, nil
 }
 
 func (c *PoloniexCrawler) Loop() {
