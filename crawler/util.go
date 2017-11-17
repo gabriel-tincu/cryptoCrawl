@@ -1,5 +1,10 @@
 package crawler
 
+import (
+	"strings"
+	"time"
+)
+
 type DataWriter interface {
 	Write(interface{}) error
 }
@@ -10,24 +15,30 @@ const (
 	BTCUSD = "BTCUSD"
 	BTCEUR = "BTCEUR"
 
-	market = "marker"
+	market = "market"
 	limit  = "limit"
-
-	buy   = "buy"
-	sell  = "sell"
-	pair  = "pair"
-	trade = "trade"
-	order = "order"
-
+	amount = "amount"
+	rate   = "rate"
+	tip    = "type"
+	data   = "data"
+	ask    = "ask"
+	bid    = "bid"
+	buy    = "buy"
+	sell   = "sell"
+	pair   = "pair"
+	trade  = "trade"
+	order  = "order"
+	cancel = "cancel"
 	kraken = "kraken"
 )
 
 type CancelMeasurement struct {
-	Meta  string
-	Type  string
-	Pair  string
-	Price string
-	Time  int64
+	Platform string
+	Meta     string
+	Type     string
+	Pair     string
+	Price    float64
+	Time     int64
 }
 
 type OrderMeasurement struct {
@@ -69,4 +80,18 @@ type CrawlerConfig struct {
 
 type Config struct {
 	CrawlerCFGS []CrawlerConfig `json:"crawlers"`
+}
+
+type CustomTime struct {
+	Time time.Time
+}
+
+func (c *CustomTime) UnmarshalJSON(b []byte) (err error) {
+	s := strings.Trim(string(b), "\"")
+	t, err := time.Parse("2006-01-02 15:04:05", s)
+	if err != nil {
+		return err
+	}
+	c.Time = t
+	return nil
 }

@@ -6,6 +6,13 @@
         "XETHZUSD",
         "XXBTZUSD"
       ]
+    },
+    {
+      "name":"poloniex",
+      "pairs": [
+        "USDT_ETH",
+        "USDT_BTC"
+      ]
     }
   ]
 }

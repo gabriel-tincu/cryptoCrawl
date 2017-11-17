@@ -1,27 +1,36 @@
 package crawler
 
 import (
+	"encoding/json"
 	"fmt"
 	"github.com/gammazero/nexus/client"
 	"github.com/gammazero/nexus/wamp"
 	log "github.com/sirupsen/logrus"
 	"os"
 	"os/signal"
+	"strconv"
 	"sync"
 	"time"
+)
+
+const (
+	poloniex    = "poloniex"
+	poloniexURL = "wss://api.poloniex.com"
+	modify      = "orderBookModify"
+	remove      = "orderBookRemove"
+	newTrade    = "newTrade"
 )
 
 var (
 	poloniexPairMapping = map[string]string{
 		"USDT_ETH": ETHUSD,
 		"USDT_BTC": BTCUSD,
-	},
-)
-
-const (
-	poloniexURL = "wss://api.poloniex.com"
-	modify = "orderBookModify"
-	remove = "orderBookRemove"
+	}
+	typeMapping = map[string]interface{}{
+		modify:   &Modify{},
+		remove:   &Remove{},
+		newTrade: &Trade{},
+	}
 )
 
 type PoloniexCrawler struct {
@@ -77,29 +86,154 @@ func (c *PoloniexCrawler) Loop() {
 
 func (c *PoloniexCrawler) handle(args wamp.List, kwargs wamp.Dict, details wamp.Dict) {
 	for _, el := range args {
-		tel := el.(map[string]interface{})
-		switch tel["type"] {
-		case trade:
-			t := tel["data"].(map[string]interface{})
-			
+		if tel, ok := el.(map[string]interface{}); ok {
+			if dTip, ok := tel[tip].(string); ok {
+				var payload interface{}
+				if payload, ok = tel[data]; !ok {
+					log.Errorf("unable to find data key on payload: %+v", tel)
+					continue
+				}
+				if dt, ok := typeMapping[dTip]; ok {
+					bits, err := json.Marshal(payload)
+					if err != nil {
+						log.Errorf("unable to marshal payload: %s", err)
+						continue
+					}
+					err = json.Unmarshal(bits, dt)
+					if err != nil {
+						log.Errorf("unable to marshal bytes into %T object: %s", dt, err)
+						continue
+					}
+					err = c.sendData(dt, pair)
+					if err != nil {
+						log.Errorf("error writing %+v: %s", dt, err)
+						continue
+					} else {
+						log.Debugf("data succesfully written")
+					}
+				} else {
+					log.Errorf("unable to find mapping for type %s", dTip)
+					continue
+				}
+			} else {
+				log.Errorf("unable to cast type key to string")
+				continue
+			}
+		} else {
+			log.Errorf("unable to cast payload as proper type: %+v", el)
+			continue
 		}
 	}
 }
 
+func (c *PoloniexCrawler) sendData(data interface{}, pair string) error {
+	switch v := data.(type) {
+	case *Modify:
+		m := OrderMeasurement{
+			Amount:    v.Amount,
+			Price:     v.Price,
+			Timestamp: time.Now().Unix(),
+			Platform:  poloniex,
+			Pair:      pair,
+			Meta:      cancel,
+		}
+		if v.Type == bid || v.Type == buy {
+			m.Type = buy
+		} else if v.Type == ask || v.Type == sell {
+			m.Type = sell
+		} else {
+			return fmt.Errorf("unknown trade type: %s", v.Type)
+		}
+		return c.writer.Write(m)
+	case *Trade:
+		// TODO All trades are considered market
+		// TODO (natch....but we really need to unify this with the way kraken / others do things)
+		// TODO specifically, we need to have SOME way of figuring out, at least as far as past orders are concerned
+		// TODO weather they are there to stay or just mud the waters (honor / cancel)
+		m := TradeMeasurement{
+			Meta:      trade,
+			Pair:      pair,
+			Platform:  poloniex,
+			Price:     v.Price,
+			Amount:    v.Amount,
+			TradeType: market,
+			Timestamp: v.Date.Time.Unix(),
+		}
+		if v.Type == bid || v.Type == buy {
+			m.TransactionType = buy
+		} else if v.Type == ask || v.Type == sell {
+			m.TransactionType = sell
+		} else {
+			return fmt.Errorf("unknown trade type: %s", v.Type)
+		}
+		return c.writer.Write(m)
+	case *Remove:
+		m := CancelMeasurement{
+			Meta:     cancel,
+			Price:    v.Price,
+			Platform: poloniex,
+			Pair:     pair,
+			Time:     time.Now().Unix(),
+		}
+		if v.Type == bid {
+			m.Type = buy
+		} else if v.Type == ask {
+			m.Type = sell
+		} else {
+			return fmt.Errorf("unknown trade type: %s", v.Type)
+		}
+		return c.writer.Write(m)
+	default:
+		return fmt.Errorf("unknown data type: %T", v)
+	}
+}
+
 type Modify struct {
-	Amount float64 `json:"amount"`
+	Amount float64 `json:"amount,string"`
 	Type   string  `json:"type"`
-	Price  string  `json:"rate"`
+	Price  float64 `json:"rate,string"`
+}
+
+func (m *Modify) Unmarshal(data map[string]string) error {
+	var am, typ, pric string
+	var ok bool
+	if am, ok = data[amount]; !ok {
+		return fmt.Errorf("error extracting amount")
+	}
+	if typ, ok = data[tip]; !ok {
+		return fmt.Errorf("error extracting type")
+	}
+	if pric, ok = data[rate]; !ok {
+		return fmt.Errorf("error extracting rate")
+	}
+	if r, err := strconv.ParseFloat(pric, 64); err == nil {
+		m.Price = r
+	} else {
+		return fmt.Errorf("unable to parse rate: %s", err)
+	}
+	if a, err := strconv.ParseFloat(am, 64); err == nil {
+		m.Amount = a
+	} else {
+		return fmt.Errorf("unable to parse amount: %s", err)
+	}
+	if typ == bid {
+		m.Type = buy
+	} else if typ == ask {
+		m.Type = sell
+	} else {
+		fmt.Errorf("unknown event type: %s", typ)
+	}
+	return nil
 }
 
 type Trade struct {
-	Price  float64   `json:"rate"`
-	Type   string    `json:"type"`
-	Amount float64   `json:"amount"`
-	Date   time.Time `json:"date"`
+	Price  float64    `json:"rate,string"`
+	Type   string     `json:"type"`
+	Amount float64    `json:"amount,string"`
+	Date   CustomTime `json:"date"`
 }
 
 type Remove struct {
-	Type  string `json:"type"`
-	Price string `json:"rate"`
+	Type  string  `json:"type"`
+	Price float64 `json:"rate,string"`
 }
