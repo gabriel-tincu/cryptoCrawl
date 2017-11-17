@@ -85,6 +85,15 @@ func (c *PoloniexCrawler) Loop() {
 }
 
 func (c *PoloniexCrawler) handle(args wamp.List, kwargs wamp.Dict, details wamp.Dict) {
+	var p string
+	if pi, ok := details[pair]; ok {
+		if p, ok = pi.(string); !ok {
+			log.Errorf("unable to cast pair: %+v", details)
+		}
+	} else {
+		log.Errorf("unable to extract pair: %+v", details)
+		return
+	}
 	for _, el := range args {
 		if tel, ok := el.(map[string]interface{}); ok {
 			if dTip, ok := tel[tip].(string); ok {
@@ -104,7 +113,7 @@ func (c *PoloniexCrawler) handle(args wamp.List, kwargs wamp.Dict, details wamp.
 						log.Errorf("unable to marshal bytes into %T object: %s", dt, err)
 						continue
 					}
-					err = c.sendData(dt, pair)
+					err = c.sendData(dt, p)
 					if err != nil {
 						log.Errorf("error writing %+v: %s", dt, err)
 						continue
