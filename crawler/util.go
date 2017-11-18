@@ -33,6 +33,13 @@ const (
 	kraken    = "kraken"
 )
 
+type InfluxMeasurement struct {
+	Measurement string
+	Tags        map[string]string
+	Fields      map[string]interface{}
+	Timestamp   time.Time
+}
+
 type CancelMeasurement struct {
 	Platform  string  `json:"platform"`
 	Meta      string  `json:"meta"`
@@ -55,6 +62,15 @@ type OrderMeasurement struct {
 	Timestamp int64   `json:"time"`
 }
 
+func (o *OrderMeasurement) AsInfluxMeasurement() InfluxMeasurement {
+	return InfluxMeasurement{
+		Measurement: o.Meta,
+		Tags:        map[string]string{"pair": o.Pair, "type": o.Type, "platform": o.Platform},
+		Fields:      map[string]interface{}{"price": o.Price, "amount": o.Amount},
+		Timestamp:   time.Unix(o.Timestamp, 0),
+	}
+}
+
 type TradeMeasurement struct {
 	Meta     string `json:"meta"`
 	Pair     string `json:"pair"`
@@ -68,10 +84,23 @@ type TradeMeasurement struct {
 	Timestamp       int64  `json:"time"`
 }
 
+func (o *TradeMeasurement) AsInfluxMeasurement() InfluxMeasurement {
+	return InfluxMeasurement{
+		Measurement: o.Meta,
+		Tags:        map[string]string{"pair": o.Pair, "platform": o.Platform, "trade_type": o.TradeType, "type": o.TransactionType},
+		Fields:      map[string]interface{}{"price": o.Price, "amount": o.Amount},
+		Timestamp:   time.Unix(o.Timestamp, 0),
+	}
+}
+
 type CrawlerFactory func(writer DataWriter, pairs []string) (Crawler, error)
 
 type Crawler interface {
 	Loop()
+}
+
+type InfluxIngestable interface {
+	AsInfluxMeasurement() InfluxMeasurement
 }
 
 type CrawlerConfig struct {

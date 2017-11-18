@@ -5,3 +5,4 @@ github.com/beldur/kraken-go-api-client
 github.com/toorop/go-bittrex
 github.com/gorilla/websocket
 github.com/pusher/pusher-http-go
+github.com/influxdata/influxdb/client/v2
