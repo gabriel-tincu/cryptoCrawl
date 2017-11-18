@@ -9,13 +9,16 @@ import (
 	"os"
 )
 
-type BasicWriter struct {
-}
+type BasicWriter struct{}
 
 func (b BasicWriter) Write(d interface{}) error {
 	fmt.Printf("%+v\n", d)
 	return nil
 }
+
+type NullWriter struct{}
+
+func (n NullWriter) Write(d interface{}) error { return nil }
 
 func getConfig(configFile *string) crawler.Config {
 	if configFile == nil || *configFile == "" {
@@ -43,10 +46,9 @@ func main() {
 	cfg := getConfig(configFile)
 	c := cfg.CrawlerCFGS[0]
 	_ = c
-	pol, err := crawler.NewBittrex(BasicWriter{}, []string{"USDT-BTC"})
+	pol, err := crawler.NewHitBTC(BasicWriter{}, []string{"BTCUSD"})
 	if err != nil {
 		panic(err)
 	}
 	pol.Loop()
-	//cl.Loop()
 }
