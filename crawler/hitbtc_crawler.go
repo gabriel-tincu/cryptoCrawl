@@ -96,40 +96,38 @@ func (c *HitBTCCrawler) Loop() {
 				continue
 			}
 			for _, p := range c.pairs {
-				if v, ok := hitBTCPairMapping[p]; ok {
-					go func() {
-						trades, err := c.Trades(p)
-						if err != nil {
-							log.Error(err)
-							skip = true
-						}
-						c.handle(v, trades)
-					}()
-				} else {
-					log.Errorf("unable to find mapping for %s", p)
-					continue
-				}
+				go c.handle(p)
 			}
 		}
 	}
 }
 
-func (c *HitBTCCrawler) handle(pair string, responseList []HitBTCTradeResponse) {
-	for _, response := range responseList {
-		m := TradeMeasurement{
-			Pair:            pair,
-			Meta:            trade,
-			Price:           response.Price,
-			Amount:          response.Amount,
-			Timestamp:       response.TimeStamp.Unix(),
-			Platform:        hitBTC,
-			TransactionType: response.Type,
-			TradeType:       limit,
-		}
-		err := c.writer.Write(m)
+func (c *HitBTCCrawler) handle(pair string) {
+	if v, ok := hitBTCPairMapping[pair]; ok {
+		trades, err := c.Trades(pair)
 		if err != nil {
-			log.Error(err)
+			log.Error("error retrieving trades: %s", err)
+			return
 		}
+		for _, response := range trades {
+			m := TradeMeasurement{
+				Pair:            v,
+				Meta:            trade,
+				Price:           response.Price,
+				Amount:          response.Amount,
+				Timestamp:       response.TimeStamp.Unix(),
+				Platform:        hitBTC,
+				TransactionType: response.Type,
+				TradeType:       limit,
+			}
+			err := c.writer.Write(m)
+			if err != nil {
+				log.Error(err)
+			}
+		}
+
+	} else {
+		log.Error("unable to find mapping for ", pair)
 	}
 }
 

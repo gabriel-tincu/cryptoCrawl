@@ -5,9 +5,14 @@ import (
 	"encoding/json"
 	"flag"
 	"fmt"
+	"github.com/sirupsen/logrus"
 	"io/ioutil"
 	"os"
 )
+
+func init() {
+	logrus.SetLevel(logrus.InfoLevel)
+}
 
 type BasicWriter struct{}
 
@@ -46,7 +51,7 @@ func main() {
 	cfg := getConfig(configFile)
 	c := cfg.CrawlerCFGS[0]
 	_ = c
-	pol, err := crawler.NewHitBTC(BasicWriter{}, []string{"BTCUSD"})
+	pol, err := crawler.NewBitStamp(BasicWriter{}, []string{"BTCUSD", "ETHUSD"})
 	if err != nil {
 		panic(err)
 	}

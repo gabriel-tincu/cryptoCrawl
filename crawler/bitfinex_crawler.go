@@ -95,6 +95,10 @@ func (c *BitfinexCrawler) Loop() {
 }
 
 func (c *BitfinexCrawler) handleTrade(pair string, data interface{}) {
+	if _, ok := data.(bitfinex.Heartbeat); ok {
+		log.Debugf("heartbeat received")
+		return
+	}
 	if fdata, ok := data.([][]float64); ok {
 		for _, dpiece := range fdata {
 			if len(dpiece) != 4 {
@@ -119,11 +123,15 @@ func (c *BitfinexCrawler) handleTrade(pair string, data interface{}) {
 			c.writer.Write(m)
 		}
 	} else {
-		log.Errorf("unable to convert data: %+v", data)
+		log.Errorf("unable to convert data: %+v: %T", data, data)
 	}
 }
 
 func (c *BitfinexCrawler) handleOrder(pair string, data interface{}) {
+	if _, ok := data.(bitfinex.Heartbeat); ok {
+		log.Debugf("heartbeat received")
+		return
+	}
 	if fdata, ok := data.([][]float64); ok {
 		for _, piece := range fdata {
 			if len(piece) != 3 {
