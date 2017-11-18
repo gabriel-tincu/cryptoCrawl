@@ -1,0 +1,32 @@
+{
+  "mappings": {
+    "_default_": {
+      "properties": {
+        "platform": {
+          "type": "keyword"
+        },
+        "meta": {
+          "type": "keyword"
+        },
+        "type": {
+          "type": "keyword"
+        },
+        "trade_type": {
+          "type": "keyword"
+        },
+        "pair": {
+          "type": "keyword"
+        },
+        "amount": {
+          "type": "float"
+        },
+        "price": {
+          "type": "float"
+        },
+        "time": {
+          "type": "date"
+        }
+      }
+    }
+  }
+}

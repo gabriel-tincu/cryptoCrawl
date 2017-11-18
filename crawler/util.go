@@ -34,16 +34,16 @@ const (
 )
 
 type CancelMeasurement struct {
-	Platform string
-	Meta     string
-	Type     string
-	Pair     string
-	Price    float64
-	Time     int64
+	Platform  string  `json:"platform"`
+	Meta      string  `json:"meta"`
+	Type      string  `json:"type"`
+	Pair      string  `json:"pair"`
+	Price     float64 `json:"price"`
+	TimeStamp int64   `json:"time"`
 }
 
 type OrderMeasurement struct {
-	Meta string
+	Meta string `json:"meta"`
 	// buy or sell
 	Type string `json:"type"`
 	// pair name - normalized
@@ -56,7 +56,7 @@ type OrderMeasurement struct {
 }
 
 type TradeMeasurement struct {
-	Meta     string
+	Meta     string `json:"meta"`
 	Pair     string `json:"pair"`
 	Platform string `json:"platform"`
 	// market, limit

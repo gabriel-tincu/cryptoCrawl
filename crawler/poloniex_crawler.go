@@ -178,11 +178,11 @@ func (c *PoloniexCrawler) sendData(data interface{}, pair string) error {
 		return c.writer.Write(m)
 	case *Remove:
 		m := CancelMeasurement{
-			Meta:     cancel,
-			Price:    v.Price,
-			Platform: poloniex,
-			Pair:     pair,
-			Time:     time.Now().Unix(),
+			Meta:      cancel,
+			Price:     v.Price,
+			Platform:  poloniex,
+			Pair:      pair,
+			TimeStamp: time.Now().Unix(),
 		}
 		if v.Type == bid {
 			m.Type = buy

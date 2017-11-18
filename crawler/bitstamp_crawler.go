@@ -1,15 +1,15 @@
 package crawler
 
 import (
+	"encoding/json"
+	"fmt"
 	"github.com/pusher/pusher-http-go"
 	log "github.com/sirupsen/logrus"
-	"net/http"
-	"fmt"
-	"strings"
-	"encoding/json"
 	"io/ioutil"
-	"time"
+	"net/http"
+	"strings"
 	"sync"
+	"time"
 )
 
 var (
@@ -30,11 +30,11 @@ const (
 )
 
 type BitStampCrawler struct {
-	pairs  []string
-	state sync.Map
-	writer DataWriter
+	pairs      []string
+	state      sync.Map
+	writer     DataWriter
 	httpClient http.Client
-	client pusher.Client
+	client     pusher.Client
 }
 
 func NewBitStamp(writer DataWriter, pairs []string) (BitStampCrawler, error) {
@@ -42,19 +42,19 @@ func NewBitStamp(writer DataWriter, pairs []string) (BitStampCrawler, error) {
 		AppId: bitStampAppId,
 	}
 	return BitStampCrawler{
-		client: cli,
-		writer: writer,
-		pairs:  pairs,
+		client:     cli,
+		writer:     writer,
+		pairs:      pairs,
 		httpClient: http.Client{},
-		state:sync.Map{},
+		state:      sync.Map{},
 	}, nil
 }
 
 func (c *BitStampCrawler) Loop() {
-	tick := time.Tick(time.Second*4)
+	tick := time.Tick(time.Second * 4)
 	for {
 		select {
-		case <- tick:
+		case <-tick:
 			for _, p := range c.pairs {
 				go c.handle(p)
 			}
@@ -73,7 +73,7 @@ func (c *BitStampCrawler) handle(pair string) {
 			return
 		}
 		var lastTime int64
-		if lt, ok := c.state.Load(lastTrade+pair); ok {
+		if lt, ok := c.state.Load(lastTrade + pair); ok {
 			lastTime = lt.(int64)
 		} else {
 			log.Warnf("last timestamp for %s not found", pair)
@@ -93,14 +93,14 @@ func (c *BitStampCrawler) handle(pair string) {
 				trans = sell
 			}
 			m := TradeMeasurement{
-				Platform:  bitstamp,
-				Timestamp: tr.Timestamp,
-				Price:     tr.Price,
-				Amount:    tr.Amount,
-				Meta:      trade,
-				Pair:v,
-				TradeType:limit,
-				TransactionType:trans,
+				Platform:        bitstamp,
+				Timestamp:       tr.Timestamp,
+				Price:           tr.Price,
+				Amount:          tr.Amount,
+				Meta:            trade,
+				Pair:            v,
+				TradeType:       limit,
+				TransactionType: trans,
 			}
 			err = c.writer.Write(m)
 			if err != nil {
