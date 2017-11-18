@@ -10,7 +10,6 @@ import (
 
 const (
 	lastAskTime = "lastAskTime"
-	lastTrade   = "lastTrade"
 	lastBidTime = "lastAskTime"
 )
 

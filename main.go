@@ -43,7 +43,7 @@ func main() {
 	cfg := getConfig(configFile)
 	c := cfg.CrawlerCFGS[0]
 	_ = c
-	pol, err := crawler.NewBitfinex(BasicWriter{}, []string{})
+	pol, err := crawler.NewBittrex(BasicWriter{}, []string{"USDT-BTC"})
 	if err != nil {
 		panic(err)
 	}

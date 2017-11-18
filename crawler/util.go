@@ -15,6 +15,7 @@ const (
 	BTCUSD = "BTCUSD"
 	BTCEUR = "BTCEUR"
 
+	lastTrade   = "lastTrade"
 	market = "market"
 	limit  = "limit"
 	amount = "amount"
