@@ -14,11 +14,11 @@ import (
 )
 
 const (
-	poloniex    = "poloniex"
-	poloniexURL = "wss://api.poloniex.com"
-	modify      = "orderBookModify"
-	remove      = "orderBookRemove"
-	newTrade    = "newTrade"
+	poloniex       = "poloniex"
+	poloniexWssURL = "wss://api.poloniex.com"
+	modify         = "orderBookModify"
+	remove         = "orderBookRemove"
+	newTrade       = "newTrade"
 )
 
 var (
@@ -47,7 +47,7 @@ func NewPoloniex(writer DataWriter, pairs []string) (*PoloniexCrawler, error) {
 		Logger:          log.New(),
 		ResponseTimeout: time.Second * 20,
 	}
-	cli, err := client.ConnectNet(poloniexURL, cfg)
+	cli, err := client.ConnectNet(poloniexWssURL, cfg)
 	if err != nil {
 		return nil, fmt.Errorf("error creating wamp client: %s", err)
 	}

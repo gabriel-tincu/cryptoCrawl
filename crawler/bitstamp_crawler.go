@@ -3,7 +3,7 @@ package crawler
 import (
 	"encoding/json"
 	"fmt"
-	"github.com/pusher/pusher-http-go"
+	"github.com/toorop/go-pusher"
 	log "github.com/sirupsen/logrus"
 	"io/ioutil"
 	"net/http"
@@ -24,8 +24,8 @@ var (
 const (
 	bitstamp             = "bitstamp"
 	bitStampAppId        = "de504dc5763aeef9ff52"
-	bitStampTradeChannel = "live_trades"
-	bitStampOrderChannel = "order_book"
+	bitStampTradeChannel = "live_trades_%s"
+	bitStampOrderChannel = "diff_order_book_%s"
 	bitStampUrlFormat    = "https://www.bitstamp.net/api/v2/transactions/%s/"
 )
 
@@ -35,19 +35,72 @@ type BitStampCrawler struct {
 	writer     DataWriter
 	httpClient http.Client
 	client     pusher.Client
+	tradeChan chan *pusher.Event
+	orderChan chan *pusher.Event
 }
 
-func NewBitStamp(writer DataWriter, pairs []string) (BitStampCrawler, error) {
-	cli := pusher.Client{
-		AppId: bitStampAppId,
+func push() {
+	c, err := pusher.NewClient("de504dc5763aeef9ff52")
+	if err != nil {
+		panic(err)
 	}
-	return BitStampCrawler{
-		client:     cli,
+	err = c.Subscribe("live_trades_ethusd")
+	if err != nil {
+		panic(err)
+	}
+	err = c.Subscribe("diff_order_book")
+	if err != nil {
+		panic(err)
+	}
+	order, err := c.Bind("trade")
+	if err != nil {
+		panic(err)
+	}
+	for e := range order {
+		fmt.Printf("%+v\n",e)
+	}
+}
+func NewBitStamp(writer DataWriter, pairs []string) (*BitStampCrawler, error) {
+	cli, err := pusher.NewClient(bitStampAppId)
+	if err != nil {
+		return nil, err
+	}
+	for _, p := range pairs {
+		v, ok := bitStampPairMapping[p]
+		if !ok {
+			return nil, fmt.Errorf("invalid mapping: %s", p)
+		}
+		cli.Subscribe(fmt.Sprintf(bitStampTradeChannel, strings.ToLower(v)))
+		cli.Subscribe(fmt.Sprintf(bitStampOrderChannel, strings.ToLower(v)))
+	}
+	tc, err := cli.Bind("trade")
+	if err != nil {
+		return nil, err
+	}
+	oc, err := cli.Bind("data")
+	if err != nil {
+		return nil, err
+	}
+	return &BitStampCrawler{
+		client:     *cli,
 		writer:     writer,
 		pairs:      pairs,
 		httpClient: http.Client{},
 		state:      sync.Map{},
+		tradeChan:tc,
+		orderChan:oc,
 	}, nil
+}
+
+func (c *BitStampCrawler) OtherLoop() {
+	for {
+		select {
+		case t := <- c.tradeChan:
+			fmt.Printf("TRADE  %+v\n", t)
+		case o := <- c.orderChan:
+			fmt.Printf("ORDER  %+v\n", o)
+		}
+	}
 }
 
 func (c *BitStampCrawler) Loop() {

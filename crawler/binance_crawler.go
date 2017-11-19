@@ -5,10 +5,10 @@ import (
 	"fmt"
 	"github.com/gorilla/websocket"
 	log "github.com/sirupsen/logrus"
+	"io/ioutil"
+	"net/http"
 	"strconv"
 	"strings"
-	"net/http"
-	"io/ioutil"
 	"time"
 )
 
@@ -20,14 +20,14 @@ var (
 )
 
 const (
-	binance        = "binance"
-	tradeWSSFormat = "wss://stream.binance.com:9443/ws/%s@aggTrade"
-	orderWSSFormat = "wss://stream.binance.com:9443/ws/%s@depth"
+	binance            = "binance"
+	tradeWSSFormat     = "wss://stream.binance.com:9443/ws/%s@aggTrade"
+	orderWSSFormat     = "wss://stream.binance.com:9443/ws/%s@depth"
 	binanceApiEndpoint = "https://api.binance.com"
 )
 
 type BinanceCrawler struct {
-	timeDiff int64
+	timeDiff  int64
 	tradeConn []websocket.Conn
 	orderConn []websocket.Conn
 	pairs     []string
@@ -47,7 +47,7 @@ func NewBinance(writer DataWriter, pairs []string) (*BinanceCrawler, error) {
 		writer:    writer,
 		orderChan: make(chan OrderMessageBinance, 1000),
 		tradeChan: make(chan TradeMessageBinance, 1000),
-		timeDiff:timeDiff,
+		timeDiff:  timeDiff,
 	}
 	for _, p := range pairs {
 		p = strings.ToLower(p)
@@ -126,20 +126,20 @@ func (c *BinanceCrawler) Loop() {
 			} else {
 				log.Errorf("unrecognized reverse mapping: %s", t.Pair)
 			}
-		 case o := <- c.orderChan:
-		 	if v, ok := binancePairMapping[o.Pair]; ok {
-		 		for i, b := range o.Bid {
-		 			if b.Amount == 0 {
-		 				continue
+		case o := <-c.orderChan:
+			if v, ok := binancePairMapping[o.Pair]; ok {
+				for i, b := range o.Bid {
+					if b.Amount == 0 {
+						continue
 					}
-		 			m := OrderMeasurement{
-		 				Pair:v,
-		 				Meta:order,
-		 				Timestamp:o.Timestamp+int64(i) - c.timeDiff,
-		 				Platform:binance,
-		 				Type:sell,
-		 				Price:b.Price,
-		 				Amount:b.Amount,
+					m := OrderMeasurement{
+						Pair:      v,
+						Meta:      order,
+						Timestamp: o.Timestamp + int64(i) - c.timeDiff,
+						Platform:  binance,
+						Type:      buy,
+						Price:     b.Price,
+						Amount:    b.Amount,
 					}
 					err := c.writer.Write(m)
 					if err != nil {
@@ -151,13 +151,13 @@ func (c *BinanceCrawler) Loop() {
 						continue
 					}
 					m := OrderMeasurement{
-						Pair:v,
-						Meta:order,
-						Timestamp:o.Timestamp+int64(i) - c.timeDiff,
-						Platform:binance,
-						Type:buy,
-						Price:a.Price,
-						Amount:a.Amount,
+						Pair:      v,
+						Meta:      order,
+						Timestamp: o.Timestamp + int64(i) - c.timeDiff,
+						Platform:  binance,
+						Type:      sell,
+						Price:     a.Price,
+						Amount:    a.Amount,
 					}
 					err := c.writer.Write(m)
 					if err != nil {
@@ -233,7 +233,7 @@ type TimeResponse struct {
 }
 
 func getBinanceServerTime() (int64, error) {
-	r, err := http.Get(binanceApiEndpoint+"/api/v1/time")
+	r, err := http.Get(binanceApiEndpoint + "/api/v1/time")
 	if err != nil {
 		return 0, err
 	}
