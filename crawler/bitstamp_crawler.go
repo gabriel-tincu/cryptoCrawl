@@ -3,13 +3,14 @@ package crawler
 import (
 	"encoding/json"
 	"fmt"
-	"github.com/toorop/go-pusher"
 	log "github.com/sirupsen/logrus"
+	"github.com/toorop/go-pusher"
 	"io/ioutil"
 	"net/http"
 	"strings"
 	"sync"
 	"time"
+	"strconv"
 )
 
 var (
@@ -35,8 +36,8 @@ type BitStampCrawler struct {
 	writer     DataWriter
 	httpClient http.Client
 	client     pusher.Client
-	tradeChan chan *pusher.Event
-	orderChan chan *pusher.Event
+	tradeChan  chan *pusher.Event
+	orderChan  chan *pusher.Event
 }
 
 func push() {
@@ -57,7 +58,7 @@ func push() {
 		panic(err)
 	}
 	for e := range order {
-		fmt.Printf("%+v\n",e)
+		fmt.Printf("%+v\n", e)
 	}
 }
 func NewBitStamp(writer DataWriter, pairs []string) (*BitStampCrawler, error) {
@@ -87,23 +88,46 @@ func NewBitStamp(writer DataWriter, pairs []string) (*BitStampCrawler, error) {
 		pairs:      pairs,
 		httpClient: http.Client{},
 		state:      sync.Map{},
-		tradeChan:tc,
-		orderChan:oc,
+		tradeChan:  tc,
+		orderChan:  oc,
 	}, nil
 }
 
-func (c *BitStampCrawler) OtherLoop() {
+func (c *BitStampCrawler) Loop() {
 	for {
 		select {
-		case t := <- c.tradeChan:
-			fmt.Printf("TRADE  %+v\n", t)
-		case o := <- c.orderChan:
-			fmt.Printf("ORDER  %+v\n", o)
+		case t := <-c.tradeChan:
+			for k, v := range bitStampPairMapping {
+				if strings.Contains(t.Channel, strings.ToLower(k)) {
+					tr := BitstampStreamTrade{}
+					err := json.Unmarshal([]byte(t.Data), &tr)
+					if err != nil {
+						log.Error(err)
+						continue
+					} else {
+						c.handleTrade(v, tr)
+					}
+				}
+			}
+		case o := <-c.orderChan:
+			for k, v := range bitStampPairMapping {
+				if strings.Contains(o.Channel, strings.ToLower(k)) {
+					or := BitstampStreamOrder{}
+					err := json.Unmarshal([]byte(o.Data), &or)
+					if err != nil {
+						log.Error(err)
+						continue
+					} else{
+						c.handleOrder(v, or)
+					}
+				}
+			}
+
 		}
 	}
 }
 
-func (c *BitStampCrawler) Loop() {
+func (c *BitStampCrawler) LoopRest() {
 	tick := time.Tick(time.Second * 4)
 	for {
 		select {
@@ -112,6 +136,51 @@ func (c *BitStampCrawler) Loop() {
 				go c.handle(p)
 			}
 		}
+	}
+}
+
+func (c *BitStampCrawler) handleTrade(pair string, tr BitstampStreamTrade) {
+	trans := buy
+	if tr.Type == 1 {
+		trans = sell
+	}
+	m := TradeMeasurement{
+		Platform:        bitstamp,
+		Timestamp:       tr.Timestamp,
+		Price:           tr.Price,
+		Amount:          tr.Amount,
+		Meta:            trade,
+		Pair:            pair,
+		TradeType:       limit,
+		TransactionType: trans,
+	}
+	c.writer.Write(m)
+}
+
+func (c *BitStampCrawler) handleOrder(pair string, or BitstampStreamOrder) {
+	for i, b := range or.Bids {
+		m := OrderMeasurement{
+			Amount:b.Amount,
+			Price:b.Price,
+			Pair:pair,
+			Timestamp:or.Timestamp+int64(i),
+			Meta:order,
+			Platform:bitstamp,
+			Type:buy,
+		}
+		c.writer.Write(m)
+	}
+	for i, a := range or.Asks {
+		m := OrderMeasurement{
+			Amount:a.Amount,
+			Price:a.Price,
+			Pair:pair,
+			Timestamp:or.Timestamp+int64(i),
+			Meta:order,
+			Platform:bitstamp,
+			Type:sell,
+		}
+		c.writer.Write(m)
 	}
 }
 
@@ -184,10 +253,53 @@ func (c *BitStampCrawler) Trades(pair string) ([]BitstampTrade, error) {
 	return trades, nil
 }
 
+type BitstampStreamTrade struct {
+	Amount      float64 `json:"amount"`
+	BuyOrderId  int64   `json:"buy_order_id"`
+	SellOrderId int64   `json:"sell_order_id"`
+	Price       float64 `json:"price"`
+	Timestamp   int64   `json:"timestamp,string"`
+	Id          int64   `json:"id"`
+	Type        int64   `json:"type"`
+}
+
+type BitstampStreamOrder struct {
+	Timestamp int64 `json:"timestamp,string"`
+	Bids []OrderData `json:"bids,string"`
+	Asks []OrderData `json:"asks,string"`
+}
+
+
+
 type BitstampTrade struct {
 	Timestamp int64   `json:"date,string"`
 	Tid       int64   `json:"tid,string"`
 	Price     float64 `json:"price,string"`
 	Amount    float64 `json:"amount,string"`
 	Type      int     `json:"type,string"`
+}
+
+type OrderData struct {
+	Price float64
+	Amount float64
+}
+
+func (o *OrderData) UnmarshalJSON(data []byte) error {
+	var str []string
+	err := json.Unmarshal(data, &str)
+	if err != nil {
+		return err
+	}
+	if len(str) != 2 {
+		return fmt.Errorf("malformed input: %s", string(data))
+	}
+	o.Price, err = strconv.ParseFloat(str[0], 64)
+	if err != nil {
+		return err
+	}
+	o.Amount, err = strconv.ParseFloat(str[1], 64)
+	if err != nil {
+		return nil
+	}
+	return nil
 }
