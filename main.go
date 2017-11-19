@@ -51,9 +51,9 @@ func main() {
 	cfg := getConfig(configFile)
 	c := cfg.CrawlerCFGS[0]
 	_ = c
-	pol, err := crawler.NewBitStamp(BasicWriter{}, []string{"BTCUSD", "ETHUSD"})
+	cr, err := crawler.NewBinance(BasicWriter{}, []string{"BTCUSDT","ETHUSDT"})
 	if err != nil {
-		panic(err)
+		logrus.Error(err)
 	}
-	pol.Loop()
+	cr.Loop()
 }

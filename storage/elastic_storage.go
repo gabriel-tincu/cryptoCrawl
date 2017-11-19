@@ -1,23 +1,23 @@
 package storage
 
 import (
-	"gopkg.in/olivere/elastic.v5"
-	"os"
-	"fmt"
-	"io/ioutil"
-	log "github.com/sirupsen/logrus"
 	"context"
+	"fmt"
+	log "github.com/sirupsen/logrus"
+	"gopkg.in/olivere/elastic.v5"
+	"io/ioutil"
+	"os"
 	"time"
 )
 
 const (
 	defaultType = "default"
-	indexName = "crypto"
+	indexName   = "crypto"
 )
 
 type ElasticStorageService struct {
-	client elastic.Client
-	ctx context.Context
+	client   elastic.Client
+	ctx      context.Context
 	dataChan chan interface{}
 }
 
@@ -37,11 +37,11 @@ func NewESStorage(host string, mappingFile string, dataChan chan interface{}) (*
 	if err != nil {
 		return nil, err
 	}
-	ctx:= context.Background()
+	ctx := context.Background()
 	c := &ElasticStorageService{
-		client:*cli,
-		ctx:ctx,
-		dataChan:dataChan,
+		client:   *cli,
+		ctx:      ctx,
+		dataChan: dataChan,
 	}
 	exists, err := cli.IndexExists(indexName).Do(ctx)
 	if exists {
@@ -62,9 +62,9 @@ func (c *ElasticStorageService) Ingest() {
 	tick := time.Tick(time.Second)
 	for {
 		select {
-		case d := <- c.dataChan:
+		case d := <-c.dataChan:
 			data = append(data, d)
-		case <- tick:
+		case <-tick:
 			go c.push(data)
 			data = []interface{}{}
 		}

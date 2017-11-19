@@ -1,10 +1,10 @@
 package storage
 
 import (
-	"github.com/influxdata/influxdb/client/v2"
-	"time"
 	"cryptoCrawl/crawler"
+	"github.com/influxdata/influxdb/client/v2"
 	log "github.com/sirupsen/logrus"
+	"time"
 )
 
 const (
@@ -12,25 +12,25 @@ const (
 )
 
 type InfluxStorageService struct {
-	 cli client.Client
-	 dataChannel chan crawler.InfluxIngestable
- }
+	cli         client.Client
+	dataChannel chan crawler.InfluxIngestable
+}
 
 func NewInfluxStorage(host string, dataChan chan crawler.InfluxIngestable) (*InfluxStorageService, error) {
 	influxCfg := client.HTTPConfig{
-		Timeout:time.Second*5,
-		Addr:host,
+		Timeout: time.Second * 5,
+		Addr:    host,
 	}
 	cli, err := client.NewHTTPClient(influxCfg)
 	if err != nil {
 		return nil, err
 	}
-	_, _, err = cli.Ping(time.Second*5)
+	_, _, err = cli.Ping(time.Second * 5)
 	if err != nil {
 		return nil, err
 	}
 	return &InfluxStorageService{
-		cli:cli,
+		cli:         cli,
 		dataChannel: dataChan,
 	}, nil
 }
@@ -49,9 +49,9 @@ func (i *InfluxStorageService) Ingest() {
 	}
 }
 
-func(i *InfluxStorageService) process(data []crawler.InfluxMeasurement) {
+func (i *InfluxStorageService) process(data []crawler.InfluxMeasurement) {
 	bp, err := client.NewBatchPoints(client.BatchPointsConfig{
-		Database:dbName,
+		Database: dbName,
 	})
 	if err != nil {
 		log.Error(err)
