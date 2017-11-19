@@ -11,7 +11,7 @@ import (
 )
 
 func init() {
-	logrus.SetLevel(logrus.InfoLevel)
+	logrus.SetLevel(logrus.DebugLevel)
 }
 
 type BasicWriter struct{}
@@ -51,7 +51,7 @@ func main() {
 	cfg := getConfig(configFile)
 	c := cfg.CrawlerCFGS[0]
 	_ = c
-	cr, err := crawler.NewBitStamp(BasicWriter{}, []string{"BTCEUR", "ETHEUR"})
+	cr, err := crawler.NewPoloniex(BasicWriter{}, []string{"USDT_ETH", "USDT_BTC"})
 	if err != nil {
 		logrus.Fatal(err)
 	}

@@ -23,6 +23,7 @@ var (
 )
 
 const (
+	bitstampTickerURL = "https://www.bitstamp.net/api/ticker/"
 	bitstamp             = "bitstamp"
 	bitStampAppId        = "de504dc5763aeef9ff52"
 	bitStampTradeChannel = "live_trades_%s"
@@ -38,6 +39,7 @@ type BitStampCrawler struct {
 	client     pusher.Client
 	tradeChan  chan *pusher.Event
 	orderChan  chan *pusher.Event
+	timeDiff int64
 }
 
 func push() {
@@ -82,6 +84,11 @@ func NewBitStamp(writer DataWriter, pairs []string) (*BitStampCrawler, error) {
 	if err != nil {
 		return nil, err
 	}
+	timeServ, err := getBitStampTime()
+	if err != nil {
+		return nil, err
+	}
+	log.Infof("got a time diff of %d, with local time: %+v", timeServ-time.Now().Unix(), time.Now())
 	return &BitStampCrawler{
 		client:     *cli,
 		writer:     writer,
@@ -90,6 +97,7 @@ func NewBitStamp(writer DataWriter, pairs []string) (*BitStampCrawler, error) {
 		state:      sync.Map{},
 		tradeChan:  tc,
 		orderChan:  oc,
+		timeDiff:timeServ-time.Now().Unix(),
 	}, nil
 }
 
@@ -163,7 +171,7 @@ func (c *BitStampCrawler) handleOrder(pair string, or BitstampStreamOrder) {
 			Amount:b.Amount,
 			Price:b.Price,
 			Pair:pair,
-			Timestamp:or.Timestamp+int64(i),
+			Timestamp:or.Timestamp+int64(i)-c.timeDiff,
 			Meta:order,
 			Platform:bitstamp,
 			Type:buy,
@@ -175,7 +183,7 @@ func (c *BitStampCrawler) handleOrder(pair string, or BitstampStreamOrder) {
 			Amount:a.Amount,
 			Price:a.Price,
 			Pair:pair,
-			Timestamp:or.Timestamp+int64(i),
+			Timestamp:or.Timestamp+int64(i)-c.timeDiff,
 			Meta:order,
 			Platform:bitstamp,
 			Type:sell,
@@ -183,7 +191,7 @@ func (c *BitStampCrawler) handleOrder(pair string, or BitstampStreamOrder) {
 		c.writer.Write(m)
 	}
 }
-
+// deprecated
 func (c *BitStampCrawler) handle(pair string) {
 	if v, ok := bitStampPairMapping[pair]; ok {
 		trades, err := c.Trades(pair)
@@ -269,7 +277,9 @@ type BitstampStreamOrder struct {
 	Asks []OrderData `json:"asks,string"`
 }
 
-
+type BitstampTickerResponse struct {
+	Timestamp int64 `json:"timestamp,string"`
+}
 
 type BitstampTrade struct {
 	Timestamp int64   `json:"date,string"`
@@ -302,4 +312,23 @@ func (o *OrderData) UnmarshalJSON(data []byte) error {
 		return nil
 	}
 	return nil
+}
+
+func getBitStampTime() (int64, error) {
+	r, err := http.Get(bitstampTickerURL)
+	if err != nil {
+		return 0, err
+	}
+	defer r.Body.Close()
+	bits, err := ioutil.ReadAll(r.Body)
+	if err != nil {
+		return 0, err
+	}
+	var resp BitstampTickerResponse
+	err = json.Unmarshal(bits, &resp)
+	if err != nil {
+		return 0, err
+	}
+	log.Infof("got ticker response : %+v", time.Unix(resp.Timestamp, 0))
+	return resp.Timestamp, nil
 }

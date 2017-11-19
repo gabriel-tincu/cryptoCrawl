@@ -11,9 +11,12 @@ import (
 	"strconv"
 	"sync"
 	"time"
+	"net/http"
+	"io/ioutil"
 )
 
 const (
+	poloniexChartUrl = "https://poloniex.com/public?command=returnTradeHistory&currencyPair=USDT_BTC"
 	poloniex       = "poloniex"
 	poloniexWssURL = "wss://api.poloniex.com"
 	modify         = "orderBookModify"
@@ -42,6 +45,11 @@ type PoloniexCrawler struct {
 }
 
 func NewPoloniex(writer DataWriter, pairs []string) (*PoloniexCrawler, error) {
+	diff, err := getPoloniexTimeDiff()
+	if err != nil {
+		return nil, err
+	}
+	log.Infof("time difference  %d", diff)
 	cfg := client.ClientConfig{
 		Realm:           "realm1",
 		Logger:          log.New(),
@@ -52,12 +60,13 @@ func NewPoloniex(writer DataWriter, pairs []string) (*PoloniexCrawler, error) {
 		return nil, fmt.Errorf("error creating wamp client: %s", err)
 	}
 	log.Infof("created WAMP client")
+
 	return &PoloniexCrawler{
 		writer:   writer,
 		pairs:    pairs,
 		cli:      *cli,
 		state:    sync.Map{},
-		timeDiff: 0,
+		timeDiff: diff,
 	}, nil
 }
 
@@ -245,4 +254,30 @@ type Trade struct {
 type Remove struct {
 	Type  string  `json:"type"`
 	Price float64 `json:"rate,string"`
+}
+
+type PoloniexChart struct {
+	Date CustomTime `json:"date"`
+}
+
+func getPoloniexTimeDiff() (int64, error) {
+	r, err := http.Get(poloniexChartUrl)
+	if err != nil {
+		return 0, err
+	}
+	defer r.Body.Close()
+	bts, err := ioutil.ReadAll(r.Body)
+	if err != nil {
+		return 0, err
+	}
+	var chrs []PoloniexChart
+	err = json.Unmarshal(bts, &chrs)
+	if err != nil {
+		return 0, err
+	}
+	last := chrs[len(chrs)-1]
+	log.Debug(last)
+	now := time.Now()
+	diff := (last.Date.Time.Hour() - now.Hour())*3600
+	return int64(diff), nil
 }
