@@ -35,6 +35,15 @@ func NewInfluxStorage(host string, dataChan chan crawler.InfluxIngestable) (*Inf
 	}, nil
 }
 
+func (c *InfluxStorageService) Write(data interface{}) {
+	if ii, ok := data.(crawler.InfluxIngestable); ok {
+		c.dataChannel <- ii
+	} else {
+		log.Errorf("%+v could not be converted to InfluxIngestable")
+	}
+}
+
+
 func (i *InfluxStorageService) Ingest() {
 	var data []crawler.InfluxMeasurement
 	ticker := time.Tick(time.Second * 2)

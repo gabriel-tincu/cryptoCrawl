@@ -120,10 +120,7 @@ func (c *HitBTCCrawler) handle(pair string) {
 				TransactionType: response.Type,
 				TradeType:       limit,
 			}
-			err := c.writer.Write(m)
-			if err != nil {
-				log.Error(err)
-			}
+			c.writer.Write(m)
 		}
 
 	} else {

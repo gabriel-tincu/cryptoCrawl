@@ -57,8 +57,12 @@ func NewESStorage(host string, mappingFile string, dataChan chan interface{}) (*
 	}
 }
 
+func (c *ElasticStorageService) Write(data interface{}) {
+	c.dataChan <- data
+}
+
 func (c *ElasticStorageService) Ingest() {
-	data := []interface{}{}
+	var data []interface{}
 	tick := time.Tick(time.Second)
 	for {
 		select {

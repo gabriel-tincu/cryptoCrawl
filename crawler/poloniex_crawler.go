@@ -162,7 +162,8 @@ func (c *PoloniexCrawler) sendData(data interface{}, pair string) error {
 		} else {
 			return fmt.Errorf("unknown trade type: %s", v.Type)
 		}
-		return c.writer.Write(m)
+		c.writer.Write(m)
+		return nil
 	case *Trade:
 		// TODO All trades are considered market
 		// TODO (natch....but we really need to unify this with the way kraken / others do things)
@@ -184,7 +185,8 @@ func (c *PoloniexCrawler) sendData(data interface{}, pair string) error {
 		} else {
 			return fmt.Errorf("unknown trade type: %s", v.Type)
 		}
-		return c.writer.Write(m)
+		c.writer.Write(m)
+		return nil
 	case *Remove:
 		m := CancelMeasurement{
 			Meta:      cancel,
@@ -200,7 +202,8 @@ func (c *PoloniexCrawler) sendData(data interface{}, pair string) error {
 		} else {
 			return fmt.Errorf("unknown trade type: %s", v.Type)
 		}
-		return c.writer.Write(m)
+		c.writer.Write(m)
+		return nil
 	default:
 		return fmt.Errorf("unknown data type: %T", v)
 	}

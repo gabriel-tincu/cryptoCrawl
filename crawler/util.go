@@ -6,7 +6,7 @@ import (
 )
 
 type DataWriter interface {
-	Write(interface{}) error
+	Write(interface{})
 }
 
 const (

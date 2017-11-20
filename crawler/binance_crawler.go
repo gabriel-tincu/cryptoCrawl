@@ -119,10 +119,7 @@ func (c *BinanceCrawler) Loop() {
 					TransactionType: typ,
 					Meta:            trade,
 				}
-				err := c.writer.Write(m)
-				if err != nil {
-					log.Error(err)
-				}
+				c.writer.Write(m)
 			} else {
 				log.Errorf("unrecognized reverse mapping: %s", t.Pair)
 			}
@@ -141,10 +138,7 @@ func (c *BinanceCrawler) Loop() {
 						Price:     b.Price,
 						Amount:    b.Amount,
 					}
-					err := c.writer.Write(m)
-					if err != nil {
-						log.Error(err)
-					}
+					c.writer.Write(m)
 				}
 				for i, a := range o.Ask {
 					if a.Amount == 0 {
@@ -159,10 +153,7 @@ func (c *BinanceCrawler) Loop() {
 						Price:     a.Price,
 						Amount:    a.Amount,
 					}
-					err := c.writer.Write(m)
-					if err != nil {
-						log.Error(err)
-					}
+					c.writer.Write(m)
 				}
 			} else {
 				log.Errorf("unrecognized reverse mapping: %s", o.Pair)

@@ -1,5 +1,6 @@
 github.com/gammazero/nexus/...
 github.com/bitfinexcom/bitfinex-api-go/...
+github.com/toorop/go-pusher
 github.com/sirupsen/logrus
 github.com/beldur/kraken-go-api-client
 github.com/toorop/go-bittrex

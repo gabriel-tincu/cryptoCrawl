@@ -232,10 +232,7 @@ func (c *BitStampCrawler) handle(pair string) {
 				TradeType:       limit,
 				TransactionType: trans,
 			}
-			err = c.writer.Write(m)
-			if err != nil {
-				log.Error(err)
-			}
+			c.writer.Write(m)
 		}
 	} else {
 		log.Errorf("unable to find mapping for %s", pair)

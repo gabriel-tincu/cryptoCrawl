@@ -108,11 +108,6 @@ func (c *KrakenCrawler) ReadTrades(symbol string, errChan chan error) {
 		} else {
 			m.TransactionType = limit
 		}
-		err = c.writer.Write(m)
-		if err != nil {
-			err = fmt.Errorf("error writing data: %s", err)
-			errChan <- err
-		}
 	}
 	c.state.Store(lastTrade+symbol, trades.Last)
 }
@@ -157,10 +152,7 @@ func (c *KrakenCrawler) ReadDepth(symbol string, errChan chan error) {
 				Platform:  kraken,
 				Type:      sell,
 			}
-			err = c.writer.Write(data)
-			if err != nil {
-				errChan <- err
-			}
+			c.writer.Write(data)
 			if a.Ts > lastAsk {
 				lastAsk = a.Ts
 			}
@@ -179,10 +171,7 @@ func (c *KrakenCrawler) ReadDepth(symbol string, errChan chan error) {
 					Platform:  kraken,
 					Type:      buy,
 				}
-				err = c.writer.Write(data)
-				if err != nil {
-					errChan <- err
-				}
+				c.writer.Write(data)
 				if b.Ts > lastBid {
 					lastBid = b.Ts
 				}
