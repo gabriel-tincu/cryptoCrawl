@@ -21,10 +21,11 @@ const (
 )
 
 type BittrexCrawler struct {
-	writer DataWriter
-	client bittrex.Bittrex
-	pairs  []string
-	data   sync.Map
+	writer  DataWriter
+	client  bittrex.Bittrex
+	pairs   []string
+	data    sync.Map
+	timDiff int64
 }
 
 func NewBittrex(writer DataWriter, pairs []string) (BittrexCrawler, error) {
@@ -76,8 +77,8 @@ func (c *BittrexCrawler) handle(pair string, trades []bittrex.Trade) {
 		m := TradeMeasurement{
 			TradeType: limit,
 			Meta:      trade,
-			Pair:      pair,
 			Platform:  bitrex,
+			Pair:      pair,
 			Timestamp: t.Timestamp.Unix(),
 			Amount:    t.Quantity,
 			Price:     t.Price,

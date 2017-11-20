@@ -43,7 +43,6 @@ func (c *InfluxStorageService) Write(data interface{}) {
 	}
 }
 
-
 func (i *InfluxStorageService) Ingest() {
 	var data []crawler.InfluxMeasurement
 	ticker := time.Tick(time.Second * 2)

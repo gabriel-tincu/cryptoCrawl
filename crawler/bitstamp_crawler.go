@@ -7,10 +7,10 @@ import (
 	"github.com/toorop/go-pusher"
 	"io/ioutil"
 	"net/http"
+	"strconv"
 	"strings"
 	"sync"
 	"time"
-	"strconv"
 )
 
 var (
@@ -23,7 +23,7 @@ var (
 )
 
 const (
-	bitstampTickerURL = "https://www.bitstamp.net/api/ticker/"
+	bitstampTickerURL    = "https://www.bitstamp.net/api/ticker/"
 	bitstamp             = "bitstamp"
 	bitStampAppId        = "de504dc5763aeef9ff52"
 	bitStampTradeChannel = "live_trades_%s"
@@ -39,7 +39,7 @@ type BitStampCrawler struct {
 	client     pusher.Client
 	tradeChan  chan *pusher.Event
 	orderChan  chan *pusher.Event
-	timeDiff int64
+	timeDiff   int64
 }
 
 func push() {
@@ -97,7 +97,7 @@ func NewBitStamp(writer DataWriter, pairs []string) (*BitStampCrawler, error) {
 		state:      sync.Map{},
 		tradeChan:  tc,
 		orderChan:  oc,
-		timeDiff:timeServ-time.Now().Unix(),
+		timeDiff:   timeServ - time.Now().Unix(),
 	}, nil
 }
 
@@ -125,7 +125,7 @@ func (c *BitStampCrawler) Loop() {
 					if err != nil {
 						log.Error(err)
 						continue
-					} else{
+					} else {
 						c.handleOrder(v, or)
 					}
 				}
@@ -168,29 +168,30 @@ func (c *BitStampCrawler) handleTrade(pair string, tr BitstampStreamTrade) {
 func (c *BitStampCrawler) handleOrder(pair string, or BitstampStreamOrder) {
 	for i, b := range or.Bids {
 		m := OrderMeasurement{
-			Amount:b.Amount,
-			Price:b.Price,
-			Pair:pair,
-			Timestamp:or.Timestamp+int64(i)-c.timeDiff,
-			Meta:order,
-			Platform:bitstamp,
-			Type:buy,
+			Amount:    b.Amount,
+			Price:     b.Price,
+			Pair:      pair,
+			Timestamp: or.Timestamp + int64(i) - c.timeDiff,
+			Meta:      order,
+			Platform:  bitstamp,
+			Type:      buy,
 		}
 		c.writer.Write(m)
 	}
 	for i, a := range or.Asks {
 		m := OrderMeasurement{
-			Amount:a.Amount,
-			Price:a.Price,
-			Pair:pair,
-			Timestamp:or.Timestamp+int64(i)-c.timeDiff,
-			Meta:order,
-			Platform:bitstamp,
-			Type:sell,
+			Amount:    a.Amount,
+			Price:     a.Price,
+			Pair:      pair,
+			Timestamp: or.Timestamp + int64(i) - c.timeDiff,
+			Meta:      order,
+			Platform:  bitstamp,
+			Type:      sell,
 		}
 		c.writer.Write(m)
 	}
 }
+
 // deprecated
 func (c *BitStampCrawler) handle(pair string) {
 	if v, ok := bitStampPairMapping[pair]; ok {
@@ -269,9 +270,9 @@ type BitstampStreamTrade struct {
 }
 
 type BitstampStreamOrder struct {
-	Timestamp int64 `json:"timestamp,string"`
-	Bids []OrderData `json:"bids,string"`
-	Asks []OrderData `json:"asks,string"`
+	Timestamp int64       `json:"timestamp,string"`
+	Bids      []OrderData `json:"bids,string"`
+	Asks      []OrderData `json:"asks,string"`
 }
 
 type BitstampTickerResponse struct {
@@ -287,7 +288,7 @@ type BitstampTrade struct {
 }
 
 type OrderData struct {
-	Price float64
+	Price  float64
 	Amount float64
 }
 

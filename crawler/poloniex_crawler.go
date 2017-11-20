@@ -6,22 +6,22 @@ import (
 	"github.com/gammazero/nexus/client"
 	"github.com/gammazero/nexus/wamp"
 	log "github.com/sirupsen/logrus"
+	"io/ioutil"
+	"net/http"
 	"os"
 	"os/signal"
 	"strconv"
 	"sync"
 	"time"
-	"net/http"
-	"io/ioutil"
 )
 
 const (
 	poloniexChartUrl = "https://poloniex.com/public?command=returnTradeHistory&currencyPair=USDT_BTC"
-	poloniex       = "poloniex"
-	poloniexWssURL = "wss://api.poloniex.com"
-	modify         = "orderBookModify"
-	remove         = "orderBookRemove"
-	newTrade       = "newTrade"
+	poloniex         = "poloniex"
+	poloniexWssURL   = "wss://api.poloniex.com"
+	modify           = "orderBookModify"
+	remove           = "orderBookRemove"
+	newTrade         = "newTrade"
 )
 
 var (
@@ -150,7 +150,7 @@ func (c *PoloniexCrawler) sendData(data interface{}, pair string) error {
 		m := OrderMeasurement{
 			Amount:    v.Amount,
 			Price:     v.Price,
-			Timestamp: time.Now().Unix(),
+			Timestamp: time.Now().Unix() - c.timeDiff,
 			Platform:  poloniex,
 			Pair:      pair,
 			Meta:      cancel,
@@ -176,7 +176,7 @@ func (c *PoloniexCrawler) sendData(data interface{}, pair string) error {
 			Price:     v.Price,
 			Amount:    v.Amount,
 			TradeType: market,
-			Timestamp: v.Date.Time.Unix(),
+			Timestamp: v.Date.Time.Unix() - c.timeDiff,
 		}
 		if v.Type == bid || v.Type == buy {
 			m.TransactionType = buy
@@ -193,7 +193,7 @@ func (c *PoloniexCrawler) sendData(data interface{}, pair string) error {
 			Price:     v.Price,
 			Platform:  poloniex,
 			Pair:      pair,
-			TimeStamp: time.Now().Unix(),
+			TimeStamp: time.Now().Unix() - c.timeDiff,
 		}
 		if v.Type == bid {
 			m.Type = buy
@@ -281,6 +281,6 @@ func getPoloniexTimeDiff() (int64, error) {
 	last := chrs[len(chrs)-1]
 	log.Debug(last)
 	now := time.Now()
-	diff := (last.Date.Time.Hour() - now.Hour())*3600
+	diff := (last.Date.Time.Hour() - now.Hour()) * 3600
 	return int64(diff), nil
 }
