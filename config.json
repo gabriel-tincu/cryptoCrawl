@@ -69,7 +69,7 @@
       }
     },
     {
-      "name": "filejl",
+      "name": "jline",
       "params": {
         "path": "/tmp/crypto_data.jl"
       }

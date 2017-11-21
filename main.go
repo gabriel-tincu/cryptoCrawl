@@ -28,6 +28,7 @@ var (
 	writerFactories = map[string]storage.WriterFactory{
 		"elasticsearch": storage.NewESStorage,
 		"influxdb":      storage.NewInfluxStorage,
+		"jline":         storage.NewJsonLineStorage,
 	}
 )
 

@@ -2,10 +2,10 @@ package crawler
 
 import (
 	"context"
-	"fmt"
 	"github.com/bitfinexcom/bitfinex-api-go/v2"
 	log "github.com/sirupsen/logrus"
 	"time"
+	"fmt"
 )
 
 var (
@@ -43,9 +43,6 @@ func (c *BitfinexCrawler) Loop() {
 		log.Error(err)
 		return
 	}
-	c.client.Websocket.AttachEventHandler(func(i interface{}) {
-		fmt.Println(i)
-	})
 	ctx := context.Background()
 	for _, p := range c.pairs {
 		var v string
