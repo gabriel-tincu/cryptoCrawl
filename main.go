@@ -16,14 +16,13 @@ func init() {
 
 type BasicWriter struct{}
 
-func (b BasicWriter) Write(d interface{}) error {
+func (b BasicWriter) Write(d interface{}) {
 	fmt.Printf("%+v\n", d)
-	return nil
 }
 
 type NullWriter struct{}
 
-func (n NullWriter) Write(d interface{}) error { return nil }
+func (n NullWriter) Write(d interface{}) {}
 
 func getConfig(configFile *string) crawler.Config {
 	if configFile == nil || *configFile == "" {
@@ -51,7 +50,7 @@ func main() {
 	cfg := getConfig(configFile)
 	c := cfg.CrawlerCFGS[0]
 	_ = c
-	cr, err := crawler.NewPoloniex(BasicWriter{}, []string{"USDT_ETH", "USDT_BTC"})
+	cr, err := crawler.NewHitBTC(BasicWriter{}, []string{"ETHUSD", "BTCUSD"})
 	if err != nil {
 		logrus.Fatal(err)
 	}

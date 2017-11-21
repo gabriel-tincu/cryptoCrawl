@@ -5,7 +5,6 @@ import (
 	"fmt"
 	log "github.com/sirupsen/logrus"
 	"github.com/toorop/go-pusher"
-	"io/ioutil"
 	"net/http"
 	"strconv"
 	"strings"
@@ -246,13 +245,8 @@ func (c *BitStampCrawler) Trades(pair string) ([]BitstampTrade, error) {
 	if err != nil {
 		return nil, err
 	}
-	defer resp.Body.Close()
 	trades := []BitstampTrade{}
-	byts, err := ioutil.ReadAll(resp.Body)
-	if err != nil {
-		return nil, err
-	}
-	err = json.Unmarshal(byts, &trades)
+	err = ReadJson(resp, &trades)
 	if err != nil {
 		return nil, err
 	}
@@ -317,13 +311,8 @@ func getBitStampTime() (int64, error) {
 	if err != nil {
 		return 0, err
 	}
-	defer r.Body.Close()
-	bits, err := ioutil.ReadAll(r.Body)
-	if err != nil {
-		return 0, err
-	}
 	var resp BitstampTickerResponse
-	err = json.Unmarshal(bits, &resp)
+	err = ReadJson(r, resp)
 	if err != nil {
 		return 0, err
 	}

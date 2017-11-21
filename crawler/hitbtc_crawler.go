@@ -1,13 +1,12 @@
 package crawler
 
 import (
-	"encoding/json"
 	"fmt"
 	log "github.com/sirupsen/logrus"
-	"io/ioutil"
 	"net/http"
 	"net/url"
 	"path"
+	"strings"
 	"sync"
 	"time"
 )
@@ -36,6 +35,62 @@ func NewHitBTC(writer DataWriter, pairs []string) (HitBTCCrawler, error) {
 	return HitBTCCrawler{pairs: pairs, client: cli, state: sync.Map{}, writer: writer}, nil
 }
 
+
+//unusable due to order of results
+func (c *HitBTCCrawler) Orders(pair string) (*HitBTCOrderResponse, error) {
+	var lastAskOrder, lastBidOrder HitBTCOrder
+	var orders HitBTCOrderResponse
+	if la, ok := c.state.Load(lastAskTime + pair); ok {
+		if lao, ok := la.(HitBTCOrder); ok {
+			lastAskOrder = lao
+		}
+	}
+	if lb, ok := c.state.Load(lastBidTime + pair); ok {
+		if lbo, ok := lb.(HitBTCOrder); ok {
+			lastBidOrder = lbo
+		}
+	}
+
+	orderUrl := fmt.Sprintf("%spublic/orderbook/%s", hitBTCUrlBase, strings.ToLower(pair))
+	log.Debugf("calling % for orders", orderUrl)
+	resp, err := http.Get(orderUrl)
+	if err != nil {
+		return nil, err
+	}
+	err = ReadJson(resp, &orders)
+	if err != nil {
+		return nil, err
+	}
+	log.Debugf("storing %+v as last ask", orders.Asks[0])
+	log.Debugf("storing %+v as last bid", orders.Bids[0])
+	c.state.Store(lastAskTime+pair, orders.Asks[0])
+	c.state.Store(lastBidTime+pair, orders.Bids[0])
+	var i int
+	for i = 0; i < len(orders.Asks); i++ {
+		log.Debugf("comparing %+v to %+v", lastAskOrder, orders.Asks[i])
+		if orders.Asks[i].Amount == lastAskOrder.Amount && orders.Asks[i].Price == lastAskOrder.Price {
+			break
+		}
+	}
+	if i < len(orders.Asks) {
+		orders.Asks = orders.Asks[:i]
+	} else {
+		log.Warnf("could not find any stop marker for ask order %+v", lastAskOrder)
+	}
+	for i = 0; i < len(orders.Bids); i++ {
+		log.Debugf("comparing %+v to %+v", lastBidOrder, orders.Bids[i])
+		if orders.Bids[i].Amount == lastBidOrder.Amount && orders.Bids[i].Price == lastBidOrder.Price {
+			break
+		}
+	}
+	if i < len(orders.Bids) {
+		orders.Bids = orders.Bids[:i]
+	} else {
+		log.Warnf("could not find any stop marker for bid order %+v", lastAskOrder)
+	}
+	return &orders, nil
+}
+
 func (c *HitBTCCrawler) Trades(pair string) ([]HitBTCTradeResponse, error) {
 	lastId := -1
 	lid, ok := c.state.Load(lastTrade + pair)
@@ -60,16 +115,8 @@ func (c *HitBTCCrawler) Trades(pair string) ([]HitBTCTradeResponse, error) {
 	if err != nil {
 		return nil, err
 	}
-	defer resp.Body.Close()
-	if resp.StatusCode != http.StatusOK {
-		return nil, fmt.Errorf("invalid status code: %d", resp.StatusCode)
-	}
-	byts, err := ioutil.ReadAll(resp.Body)
-	if err != nil {
-		return nil, err
-	}
-	decoded := []HitBTCTradeResponse{}
-	err = json.Unmarshal(byts, &decoded)
+	var decoded []HitBTCTradeResponse
+	err = ReadJson(resp, &decoded)
 	if err != nil {
 		return nil, err
 	}
@@ -85,24 +132,53 @@ func (c *HitBTCCrawler) Trades(pair string) ([]HitBTCTradeResponse, error) {
 }
 
 func (c *HitBTCCrawler) Loop() {
-	skip := false
 	ticker := time.Tick(time.Second * 2)
 	for {
 		select {
 		case <-ticker:
-			if skip {
-				log.Error("skipping one term due to previous failures")
-				skip = false
-				continue
-			}
 			for _, p := range c.pairs {
-				go c.handle(p)
+				go c.handleTrade(p)
 			}
 		}
 	}
 }
 
-func (c *HitBTCCrawler) handle(pair string) {
+func (c *HitBTCCrawler) handleOrder(pair string) {
+	if v, ok := hitBTCPairMapping[pair]; ok {
+		orders, err := c.Orders(pair)
+		if err != nil {
+			log.Errorf("error retrieving hitbtc orders: %s", err)
+			return
+		}
+		now := time.Now().Unix()
+		for i, a := range orders.Asks {
+			m := OrderMeasurement{
+				Platform:  hitBTC,
+				Meta:      order,
+				Type:      buy,
+				Pair:      v,
+				Price:     a.Price,
+				Amount:    a.Amount,
+				Timestamp: now - int64(i),
+			}
+			c.writer.Write(m)
+		}
+		for i, b := range orders.Bids {
+			m := OrderMeasurement{
+				Platform:  hitBTC,
+				Meta:      order,
+				Type:      sell,
+				Pair:      v,
+				Price:     b.Price,
+				Amount:    b.Amount,
+				Timestamp: now - int64(i),
+			}
+			c.writer.Write(m)
+		}
+	}
+}
+
+func (c *HitBTCCrawler) handleTrade(pair string) {
 	if v, ok := hitBTCPairMapping[pair]; ok {
 		trades, err := c.Trades(pair)
 		if err != nil {
@@ -126,6 +202,16 @@ func (c *HitBTCCrawler) handle(pair string) {
 	} else {
 		log.Error("unable to find mapping for ", pair)
 	}
+}
+
+type HitBTCOrder struct {
+	Price  float64 `json:"price,string"`
+	Amount float64 `json:"size,string"`
+}
+
+type HitBTCOrderResponse struct {
+	Asks []HitBTCOrder `json:"ask"`
+	Bids []HitBTCOrder `json:"bid"`
 }
 
 type HitBTCTradeResponse struct {

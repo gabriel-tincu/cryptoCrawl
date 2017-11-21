@@ -228,13 +228,8 @@ func getBinanceServerTime() (int64, error) {
 	if err != nil {
 		return 0, err
 	}
-	defer r.Body.Close()
-	bits, err := ioutil.ReadAll(r.Body)
-	if err != nil {
-		return 0, err
-	}
 	t := &TimeResponse{}
-	err = json.Unmarshal(bits, t)
+	err = ReadJson(r, t)
 	if err != nil {
 		return 0, err
 	}

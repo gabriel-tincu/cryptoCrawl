@@ -10,7 +10,7 @@ import (
 
 const (
 	lastAskTime = "lastAskTime"
-	lastBidTime = "lastAskTime"
+	lastBidTime = "lastBidTime"
 )
 
 var (

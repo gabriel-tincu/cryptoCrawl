@@ -1,6 +1,10 @@
 package crawler
 
 import (
+	"encoding/json"
+	"fmt"
+	"io/ioutil"
+	"net/http"
 	"strings"
 	"time"
 )
@@ -124,4 +128,16 @@ func (c *CustomTime) UnmarshalJSON(b []byte) (err error) {
 	}
 	c.Time = t
 	return nil
+}
+
+func ReadJson(resp *http.Response, data interface{}) error {
+	defer resp.Body.Close()
+	if resp.StatusCode != http.StatusOK {
+		return fmt.Errorf("invalid status code: %d", resp.StatusCode)
+	}
+	bits, err := ioutil.ReadAll(resp.Body)
+	if err != nil {
+		return err
+	}
+	return json.Unmarshal(bits, data)
 }

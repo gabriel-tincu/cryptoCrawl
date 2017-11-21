@@ -6,7 +6,6 @@ import (
 	"github.com/gammazero/nexus/client"
 	"github.com/gammazero/nexus/wamp"
 	log "github.com/sirupsen/logrus"
-	"io/ioutil"
 	"net/http"
 	"os"
 	"os/signal"
@@ -165,10 +164,6 @@ func (c *PoloniexCrawler) sendData(data interface{}, pair string) error {
 		c.writer.Write(m)
 		return nil
 	case *Trade:
-		// TODO All trades are considered market
-		// TODO (natch....but we really need to unify this with the way kraken / others do things)
-		// TODO specifically, we need to have SOME way of figuring out, at least as far as past orders are concerned
-		// TODO weather they are there to stay or just mud the waters (honor / cancel)
 		m := TradeMeasurement{
 			Meta:      trade,
 			Pair:      pair,
@@ -268,13 +263,8 @@ func getPoloniexTimeDiff() (int64, error) {
 	if err != nil {
 		return 0, err
 	}
-	defer r.Body.Close()
-	bts, err := ioutil.ReadAll(r.Body)
-	if err != nil {
-		return 0, err
-	}
 	var chrs []PoloniexChart
-	err = json.Unmarshal(bts, &chrs)
+	err = ReadJson(r, &chrs)
 	if err != nil {
 		return 0, err
 	}
