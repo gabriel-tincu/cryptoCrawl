@@ -22,6 +22,7 @@ type ElasticStorageService struct {
 }
 
 func NewESStorage(params map[string]string) (DataWriter, error) {
+	log.Debugf("launching new ES storage with params: %+v", params)
 	host, ok := params["host"]
 	if !ok {
 		return nil, fmt.Errorf("param 'host' should be present")
@@ -34,6 +35,7 @@ func NewESStorage(params map[string]string) (DataWriter, error) {
 	if err != nil {
 		return nil, err
 	}
+
 	if fi, err := os.Stat(mappingFile); err != nil {
 		return nil, err
 	} else {
@@ -54,12 +56,15 @@ func NewESStorage(params map[string]string) (DataWriter, error) {
 	exists, err := cli.IndexExists(indexName).Do(ctx)
 	if exists {
 		log.Warnf("index %s already exists, skipping", indexName)
+		go c.Ingest()
 		return c, nil
 	} else {
+		log.Debugf("creating new index %s from mapping file %s", indexName, mappingFile)
 		_, err = cli.CreateIndex(indexName).Body(string(bits)).Do(ctx)
 		if err != nil {
 			return nil, err
 		} else {
+			go c.Ingest()
 			return c, nil
 		}
 	}
@@ -84,12 +89,18 @@ func (c *ElasticStorageService) Ingest() {
 }
 
 func (c *ElasticStorageService) push(data []interface{}) {
-	requests := []elastic.BulkableRequest{}
+	if len(data) == 0 {
+		log.Debugf("no data to push, bailing")
+		return
+	}
+	var requests []elastic.BulkableRequest
 	for _, i := range data {
 		requests = append(requests, elastic.NewBulkIndexRequest().Doc(i))
 	}
 	_, err := c.client.Bulk().Index(indexName).Type(defaultType).Add(requests...).Do(c.ctx)
 	if err != nil {
 		log.Errorf("error indexing %d docs: %s", len(data), err)
+	} else {
+		log.Debugf("successfully pushed %d bulk datapoints in ES", len(data))
 	}
 }

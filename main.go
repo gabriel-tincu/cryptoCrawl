@@ -75,12 +75,16 @@ func main() {
 		return
 	}
 	mainCfg := getConfig(configFile)
+	log.Debugf("working with config %+v", mainCfg)
 	if cf, ok := crawlerFactories[*crawlerName]; ok {
 		for _, cfg := range mainCfg.CrawlerCFGS {
 			if cfg.Name == *crawlerName {
 				var writers []crawler.DataWriter
+				log.Debugf("parsing writer configs: %+v", mainCfg.WriterCFGS)
 				for _, v := range mainCfg.WriterCFGS {
-					if wrf, ok := writerFactories[v.Name];ok {
+					log.Debugf("searching factory config for %s", v.Name)
+					if wrf, ok := writerFactories[v.Name]; ok {
+						log.Debugf("adding new writer %s", v.Name)
 						dataW, err := wrf(v.Params)
 						if err != nil {
 							log.Fatalf("error instantiating writer %s: %s", v.Name, err)

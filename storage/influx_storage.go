@@ -34,23 +34,25 @@ func NewInfluxStorage(params map[string]string) (DataWriter, error) {
 	if err != nil {
 		return nil, err
 	}
-	return &InfluxStorageService{
+	res := &InfluxStorageService{
 		cli:         cli,
 		dataChannel: make(chan crawler.InfluxIngestable, 10000),
-	}, nil
+	}
+	go res.Ingest()
+	return res, nil
 }
 
 func (c *InfluxStorageService) Write(data interface{}) {
 	if ii, ok := data.(crawler.InfluxIngestable); ok {
 		c.dataChannel <- ii
 	} else {
-		log.Errorf("%+v could not be converted to InfluxIngestable")
+		log.Errorf("%+v could not be converted to InfluxIngestable", data)
 	}
 }
 
 func (i *InfluxStorageService) Ingest() {
 	var data []crawler.InfluxMeasurement
-	ticker := time.Tick(time.Second * 2)
+	ticker := time.Tick(time.Second * 1)
 	for {
 		select {
 		case d := <-i.dataChannel:
@@ -79,9 +81,12 @@ func (i *InfluxStorageService) process(data []crawler.InfluxMeasurement) {
 		}
 		points = append(points, p)
 	}
+	log.Debugf("pushing to influx")
 	bp.AddPoints(points)
 	err = i.cli.Write(bp)
 	if err != nil {
 		log.Errorf("error writing %d points to influx: %s", len(points), err)
+	} else {
+		log.Debugf("successfully written %d bulk points to influx", len(points))
 	}
 }

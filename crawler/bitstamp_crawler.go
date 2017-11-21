@@ -299,7 +299,7 @@ func getBitStampTime() (int64, error) {
 		return 0, err
 	}
 	var resp BitstampTickerResponse
-	err = ReadJson(r, resp)
+	err = ReadJson(r, &resp)
 	if err != nil {
 		return 0, err
 	}

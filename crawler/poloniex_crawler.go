@@ -160,7 +160,7 @@ func (c *PoloniexCrawler) sendData(data interface{}, pair string) error {
 			return fmt.Errorf("unknown trade type: %s", v.Type)
 		}
 		for _, w := range c.writers {
-			w.Write(data)
+			w.Write(m)
 		}
 		return nil
 	case *Trade:
@@ -181,7 +181,7 @@ func (c *PoloniexCrawler) sendData(data interface{}, pair string) error {
 			return fmt.Errorf("unknown trade type: %s", v.Type)
 		}
 		for _, w := range c.writers {
-			w.Write(data)
+			w.Write(m)
 		}
 		return nil
 	case *Remove:
@@ -200,7 +200,7 @@ func (c *PoloniexCrawler) sendData(data interface{}, pair string) error {
 			return fmt.Errorf("unknown trade type: %s", v.Type)
 		}
 		for _, w := range c.writers {
-			w.Write(data)
+			w.Write(m)
 		}
 		return nil
 	default:

@@ -31,7 +31,7 @@ type KrakenCrawler struct {
 }
 
 func NewKraken(writers []DataWriter, pairs []string) (Crawler, error) {
-	log.Debugf("creating new kraken crawler for pairs %+v", pairs)
+	log.Debugf("creating new kraken crawler for pairs %+v and writers %+v", pairs, writers)
 	cli := krakenapi.New("", "")
 	cl := KrakenCrawler{
 		pairs:   pairs,

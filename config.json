@@ -17,6 +17,13 @@
       ]
     },
     {
+      "name":"bitfinex",
+      "pairs": [
+        "BTCUSD",
+        "ETHUSD"
+      ]
+    },
+    {
       "name":"binance",
       "pairs": [
         "BTCUSDT",
@@ -58,7 +65,7 @@
     {
       "name": "influxdb",
       "params": {
-        "host": "localhost"
+        "host": "http://localhost:8086"
       }
     }
   ]

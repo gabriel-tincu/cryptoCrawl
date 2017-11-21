@@ -60,6 +60,15 @@ type CancelMeasurement struct {
 	TimeStamp int64   `json:"time"`
 }
 
+func (c CancelMeasurement) AsInfluxMeasurement() InfluxMeasurement {
+	return InfluxMeasurement{
+		Measurement: c.Meta,
+		Tags:        map[string]string{"pair": c.Pair, "type": c.Type, "platform": c.Platform},
+		Fields:      map[string]interface{}{"price": c.Price},
+		Timestamp:   time.Unix(c.TimeStamp, 0),
+	}
+}
+
 type OrderMeasurement struct {
 	Meta string `json:"meta"`
 	// buy or sell
@@ -73,7 +82,7 @@ type OrderMeasurement struct {
 	Timestamp int64   `json:"time"`
 }
 
-func (o *OrderMeasurement) AsInfluxMeasurement() InfluxMeasurement {
+func (o OrderMeasurement) AsInfluxMeasurement() InfluxMeasurement {
 	return InfluxMeasurement{
 		Measurement: o.Meta,
 		Tags:        map[string]string{"pair": o.Pair, "type": o.Type, "platform": o.Platform},
@@ -95,7 +104,7 @@ type TradeMeasurement struct {
 	Timestamp       int64  `json:"time"`
 }
 
-func (o *TradeMeasurement) AsInfluxMeasurement() InfluxMeasurement {
+func (o TradeMeasurement) AsInfluxMeasurement() InfluxMeasurement {
 	return InfluxMeasurement{
 		Measurement: o.Meta,
 		Tags:        map[string]string{"pair": o.Pair, "platform": o.Platform, "trade_type": o.TradeType, "type": o.TransactionType},
