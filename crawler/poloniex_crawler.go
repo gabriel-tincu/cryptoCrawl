@@ -123,9 +123,7 @@ func (c *PoloniexCrawler) handle(args wamp.List, kwargs wamp.Dict, details wamp.
 					if err != nil {
 						log.Errorf("error writing %+v: %s", dt, err)
 						continue
-					} else {
-						log.Debugf("data succesfully written")
-					}
+					} 
 				} else {
 					log.Errorf("unable to find mapping for type %s", dTip)
 					continue

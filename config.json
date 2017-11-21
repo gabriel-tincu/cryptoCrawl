@@ -67,6 +67,12 @@
       "params": {
         "host": "http://localhost:8086"
       }
+    },
+    {
+      "name": "filejl",
+      "params": {
+        "path": "/tmp/crypto_data.jl"
+      }
     }
   ]
 }

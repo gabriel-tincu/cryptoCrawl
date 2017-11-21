@@ -81,7 +81,6 @@ func (i *InfluxStorageService) process(data []crawler.InfluxMeasurement) {
 		}
 		points = append(points, p)
 	}
-	log.Debugf("pushing to influx")
 	bp.AddPoints(points)
 	err = i.cli.Write(bp)
 	if err != nil {

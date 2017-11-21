@@ -109,7 +109,7 @@ func (c *BitfinexCrawler) handleTrade(pair string, data interface{}) {
 			m := TradeMeasurement{
 				Price:           dpiece[3],
 				Amount:          total,
-				Timestamp:       int64(dpiece[1]),
+				Timestamp:       int64(dpiece[1]/1000),
 				Platform:        Bitfin,
 				Pair:            pair,
 				Meta:            trade,
