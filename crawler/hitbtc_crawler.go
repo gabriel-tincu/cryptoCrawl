@@ -19,22 +19,20 @@ var (
 )
 
 const (
-	hitBTC        = "hitbtc"
 	hitBTCUrlBase = "https://api.hitbtc.com/api/2/"
 )
 
 type HitBTCCrawler struct {
-	pairs  []string
-	client http.Client
-	state  sync.Map
-	writer DataWriter
+	pairs   []string
+	client  http.Client
+	state   sync.Map
+	writers []DataWriter
 }
 
-func NewHitBTC(writer DataWriter, pairs []string) (HitBTCCrawler, error) {
+func NewHitBTC(writers []DataWriter, pairs []string) (Crawler, error) {
 	cli := http.Client{Timeout: time.Second * 10}
-	return HitBTCCrawler{pairs: pairs, client: cli, state: sync.Map{}, writer: writer}, nil
+	return &HitBTCCrawler{pairs: pairs, client: cli, state: sync.Map{}, writers: writers}, nil
 }
-
 
 //unusable due to order of results
 func (c *HitBTCCrawler) Orders(pair string) (*HitBTCOrderResponse, error) {
@@ -153,7 +151,7 @@ func (c *HitBTCCrawler) handleOrder(pair string) {
 		now := time.Now().Unix()
 		for i, a := range orders.Asks {
 			m := OrderMeasurement{
-				Platform:  hitBTC,
+				Platform:  HitBTC,
 				Meta:      order,
 				Type:      buy,
 				Pair:      v,
@@ -161,11 +159,13 @@ func (c *HitBTCCrawler) handleOrder(pair string) {
 				Amount:    a.Amount,
 				Timestamp: now - int64(i),
 			}
-			c.writer.Write(m)
+			for _, w := range c.writers {
+				w.Write(m)
+			}
 		}
 		for i, b := range orders.Bids {
 			m := OrderMeasurement{
-				Platform:  hitBTC,
+				Platform:  HitBTC,
 				Meta:      order,
 				Type:      sell,
 				Pair:      v,
@@ -173,7 +173,9 @@ func (c *HitBTCCrawler) handleOrder(pair string) {
 				Amount:    b.Amount,
 				Timestamp: now - int64(i),
 			}
-			c.writer.Write(m)
+			for _, w := range c.writers {
+				w.Write(m)
+			}
 		}
 	}
 }
@@ -192,11 +194,13 @@ func (c *HitBTCCrawler) handleTrade(pair string) {
 				Price:           response.Price,
 				Amount:          response.Amount,
 				Timestamp:       response.TimeStamp.Unix(),
-				Platform:        hitBTC,
+				Platform:        HitBTC,
 				TransactionType: response.Type,
 				TradeType:       limit,
 			}
-			c.writer.Write(m)
+			for _, w := range c.writers {
+				w.Write(m)
+			}
 		}
 
 	} else {

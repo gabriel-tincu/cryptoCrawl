@@ -4,7 +4,9 @@
       "name":"kraken",
       "pairs": [
         "XETHZUSD",
-        "XXBTZUSD"
+        "XXBTZUSD",
+        "XXBTZEUR",
+        "XETHZEUR"
       ]
     },
     {
@@ -13,6 +15,51 @@
         "USDT_ETH",
         "USDT_BTC"
       ]
+    },
+    {
+      "name":"binance",
+      "pairs": [
+        "BTCUSDT",
+        "ETHUSDT"
+      ]
+    },
+    {
+      "name":"bittrex",
+      "pairs": [
+        "USDT-ETH",
+        "USDT-BTC"
+      ]
+    },
+    {
+      "name":"bitstamp",
+      "pairs": [
+        "BTCUSD",
+        "ETHUSD",
+        "BTCEUR",
+        "ETHEUR"
+      ]
+    },
+    {
+      "name":"hitbtc",
+      "pairs": [
+        "BTCUSD",
+        "ETHUSD"
+      ]
+    }
+  ],
+  "writers": [
+    {
+      "name": "elasticsearch",
+      "params": {
+        "mapping": "mapping.json",
+        "host": "http://localhost:9200"
+      }
+    },
+    {
+      "name": "influxdb",
+      "params": {
+        "host": "localhost"
+      }
     }
   ]
 }

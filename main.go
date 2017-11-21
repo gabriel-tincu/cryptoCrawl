@@ -2,17 +2,34 @@ package main
 
 import (
 	"cryptoCrawl/crawler"
+	"cryptoCrawl/storage"
 	"encoding/json"
 	"flag"
 	"fmt"
-	"github.com/sirupsen/logrus"
+	log "github.com/sirupsen/logrus"
 	"io/ioutil"
 	"os"
 )
 
 func init() {
-	logrus.SetLevel(logrus.DebugLevel)
+	log.SetLevel(log.DebugLevel)
 }
+
+var (
+	crawlerFactories = map[string]crawler.CrawlerFactory{
+		crawler.Kraken:   crawler.NewKraken,
+		crawler.Poloniex: crawler.NewPoloniex,
+		crawler.HitBTC:   crawler.NewHitBTC,
+		crawler.Bitstamp: crawler.NewBitStamp,
+		crawler.Bitfin:   crawler.NewBitfinex,
+		crawler.Bittrex:  crawler.NewBittrex,
+		crawler.Binance:  crawler.NewBinance,
+	}
+	writerFactories = map[string]storage.WriterFactory{
+		"elasticsearch": storage.NewESStorage,
+		"influxdb":      storage.NewInfluxStorage,
+	}
+)
 
 type BasicWriter struct{}
 
@@ -20,11 +37,16 @@ func (b BasicWriter) Write(d interface{}) {
 	fmt.Printf("%+v\n", d)
 }
 
+type Config struct {
+	CrawlerCFGS []crawler.CrawlerConfig `json:"crawlers"`
+	WriterCFGS  []storage.WriterConfig  `json:"writers"`
+}
+
 type NullWriter struct{}
 
 func (n NullWriter) Write(d interface{}) {}
 
-func getConfig(configFile *string) crawler.Config {
+func getConfig(configFile *string) Config {
 	if configFile == nil || *configFile == "" {
 		panic("error reading config file")
 	}
@@ -32,7 +54,7 @@ func getConfig(configFile *string) crawler.Config {
 	if err != nil || s.IsDir() {
 		panic("error reading config file")
 	}
-	cfg := crawler.Config{}
+	cfg := Config{}
 	cfgBytes, err := ioutil.ReadFile(*configFile)
 	if err != nil {
 		panic("error reading config file")
@@ -46,13 +68,32 @@ func getConfig(configFile *string) crawler.Config {
 
 func main() {
 	configFile := flag.String("config", "config.json", "config file in json format")
+	crawlerName := flag.String("crawler", "", "crawler to start")
 	flag.Parse()
-	cfg := getConfig(configFile)
-	c := cfg.CrawlerCFGS[0]
-	_ = c
-	cr, err := crawler.NewHitBTC(BasicWriter{}, []string{"ETHUSD", "BTCUSD"})
-	if err != nil {
-		logrus.Fatal(err)
+	if *crawlerName == "" {
+		log.Fatalf("crawler name not present")
+		return
 	}
-	cr.Loop()
+	mainCfg := getConfig(configFile)
+	if cf, ok := crawlerFactories[*crawlerName]; ok {
+		for _, cfg := range mainCfg.CrawlerCFGS {
+			if cfg.Name == *crawlerName {
+				var writers []crawler.DataWriter
+				for _, v := range mainCfg.WriterCFGS {
+					if wrf, ok := writerFactories[v.Name];ok {
+						dataW, err := wrf(v.Params)
+						if err != nil {
+							log.Fatalf("error instantiating writer %s: %s", v.Name, err)
+						}
+						writers = append(writers, dataW)
+					}
+				}
+				crawl, err := cf(writers, cfg.Pairs)
+				if err != nil {
+					log.Fatalf("error creating crawler with name %s: %s", cfg.Name, err)
+				}
+				crawl.Loop()
+			}
+		}
+	}
 }

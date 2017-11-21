@@ -5,7 +5,6 @@ import (
 	"fmt"
 	"github.com/gorilla/websocket"
 	log "github.com/sirupsen/logrus"
-	"io/ioutil"
 	"net/http"
 	"strconv"
 	"strings"
@@ -20,7 +19,6 @@ var (
 )
 
 const (
-	binance            = "binance"
 	tradeWSSFormat     = "wss://stream.binance.com:9443/ws/%s@aggTrade"
 	orderWSSFormat     = "wss://stream.binance.com:9443/ws/%s@depth"
 	binanceApiEndpoint = "https://api.binance.com"
@@ -31,12 +29,12 @@ type BinanceCrawler struct {
 	tradeConn []websocket.Conn
 	orderConn []websocket.Conn
 	pairs     []string
-	writer    DataWriter
+	writers   []DataWriter
 	tradeChan chan TradeMessageBinance
 	orderChan chan OrderMessageBinance
 }
 
-func NewBinance(writer DataWriter, pairs []string) (*BinanceCrawler, error) {
+func NewBinance(writers []DataWriter, pairs []string) (Crawler, error) {
 	serverTime, err := getBinanceServerTime()
 	if err != nil {
 		return nil, err
@@ -44,7 +42,7 @@ func NewBinance(writer DataWriter, pairs []string) (*BinanceCrawler, error) {
 	timeDiff := serverTime - time.Now().Unix()
 	c := &BinanceCrawler{
 		pairs:     pairs,
-		writer:    writer,
+		writers:   writers,
 		orderChan: make(chan OrderMessageBinance, 1000),
 		tradeChan: make(chan TradeMessageBinance, 1000),
 		timeDiff:  timeDiff,
@@ -113,13 +111,15 @@ func (c *BinanceCrawler) Loop() {
 					Amount:          t.Amount,
 					Price:           t.Price,
 					Pair:            v,
-					Platform:        binance,
+					Platform:        Binance,
 					TradeType:       limit,
 					Timestamp:       t.EventTimestamp - c.timeDiff,
 					TransactionType: typ,
 					Meta:            trade,
 				}
-				c.writer.Write(m)
+				for _, w := range c.writers {
+					w.Write(m)
+				}
 			} else {
 				log.Errorf("unrecognized reverse mapping: %s", t.Pair)
 			}
@@ -133,12 +133,14 @@ func (c *BinanceCrawler) Loop() {
 						Pair:      v,
 						Meta:      order,
 						Timestamp: o.Timestamp + int64(i) - c.timeDiff,
-						Platform:  binance,
+						Platform:  Binance,
 						Type:      buy,
 						Price:     b.Price,
 						Amount:    b.Amount,
 					}
-					c.writer.Write(m)
+					for _, w := range c.writers {
+						w.Write(m)
+					}
 				}
 				for i, a := range o.Ask {
 					if a.Amount == 0 {
@@ -148,12 +150,14 @@ func (c *BinanceCrawler) Loop() {
 						Pair:      v,
 						Meta:      order,
 						Timestamp: o.Timestamp + int64(i) - c.timeDiff,
-						Platform:  binance,
+						Platform:  Binance,
 						Type:      sell,
 						Price:     a.Price,
 						Amount:    a.Amount,
 					}
-					c.writer.Write(m)
+					for _, w := range c.writers {
+						w.Write(m)
+					}
 				}
 			} else {
 				log.Errorf("unrecognized reverse mapping: %s", o.Pair)

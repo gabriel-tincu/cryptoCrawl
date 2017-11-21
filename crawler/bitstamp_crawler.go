@@ -23,7 +23,6 @@ var (
 
 const (
 	bitstampTickerURL    = "https://www.bitstamp.net/api/ticker/"
-	bitstamp             = "bitstamp"
 	bitStampAppId        = "de504dc5763aeef9ff52"
 	bitStampTradeChannel = "live_trades_%s"
 	bitStampOrderChannel = "diff_order_book_%s"
@@ -33,7 +32,7 @@ const (
 type BitStampCrawler struct {
 	pairs      []string
 	state      sync.Map
-	writer     DataWriter
+	writers    []DataWriter
 	httpClient http.Client
 	client     pusher.Client
 	tradeChan  chan *pusher.Event
@@ -41,28 +40,7 @@ type BitStampCrawler struct {
 	timeDiff   int64
 }
 
-func push() {
-	c, err := pusher.NewClient("de504dc5763aeef9ff52")
-	if err != nil {
-		panic(err)
-	}
-	err = c.Subscribe("live_trades_ethusd")
-	if err != nil {
-		panic(err)
-	}
-	err = c.Subscribe("diff_order_book")
-	if err != nil {
-		panic(err)
-	}
-	order, err := c.Bind("trade")
-	if err != nil {
-		panic(err)
-	}
-	for e := range order {
-		fmt.Printf("%+v\n", e)
-	}
-}
-func NewBitStamp(writer DataWriter, pairs []string) (*BitStampCrawler, error) {
+func NewBitStamp(writers []DataWriter, pairs []string) (Crawler, error) {
 	cli, err := pusher.NewClient(bitStampAppId)
 	if err != nil {
 		return nil, err
@@ -90,7 +68,7 @@ func NewBitStamp(writer DataWriter, pairs []string) (*BitStampCrawler, error) {
 	log.Infof("got a time diff of %d, with local time: %+v", timeServ-time.Now().Unix(), time.Now())
 	return &BitStampCrawler{
 		client:     *cli,
-		writer:     writer,
+		writers:    writers,
 		pairs:      pairs,
 		httpClient: http.Client{},
 		state:      sync.Map{},
@@ -134,6 +112,7 @@ func (c *BitStampCrawler) Loop() {
 	}
 }
 
+//deprecated
 func (c *BitStampCrawler) LoopRest() {
 	tick := time.Tick(time.Second * 4)
 	for {
@@ -152,7 +131,7 @@ func (c *BitStampCrawler) handleTrade(pair string, tr BitstampStreamTrade) {
 		trans = sell
 	}
 	m := TradeMeasurement{
-		Platform:        bitstamp,
+		Platform:        Bitstamp,
 		Timestamp:       tr.Timestamp,
 		Price:           tr.Price,
 		Amount:          tr.Amount,
@@ -161,7 +140,9 @@ func (c *BitStampCrawler) handleTrade(pair string, tr BitstampStreamTrade) {
 		TradeType:       limit,
 		TransactionType: trans,
 	}
-	c.writer.Write(m)
+	for _, w := range c.writers {
+		w.Write(m)
+	}
 }
 
 func (c *BitStampCrawler) handleOrder(pair string, or BitstampStreamOrder) {
@@ -172,10 +153,12 @@ func (c *BitStampCrawler) handleOrder(pair string, or BitstampStreamOrder) {
 			Pair:      pair,
 			Timestamp: or.Timestamp + int64(i) - c.timeDiff,
 			Meta:      order,
-			Platform:  bitstamp,
+			Platform:  Bitstamp,
 			Type:      buy,
 		}
-		c.writer.Write(m)
+		for _, w := range c.writers {
+			w.Write(m)
+		}
 	}
 	for i, a := range or.Asks {
 		m := OrderMeasurement{
@@ -184,10 +167,12 @@ func (c *BitStampCrawler) handleOrder(pair string, or BitstampStreamOrder) {
 			Pair:      pair,
 			Timestamp: or.Timestamp + int64(i) - c.timeDiff,
 			Meta:      order,
-			Platform:  bitstamp,
+			Platform:  Bitstamp,
 			Type:      sell,
 		}
-		c.writer.Write(m)
+		for _, w := range c.writers {
+			w.Write(m)
+		}
 	}
 }
 
@@ -223,7 +208,7 @@ func (c *BitStampCrawler) handle(pair string) {
 				trans = sell
 			}
 			m := TradeMeasurement{
-				Platform:        bitstamp,
+				Platform:        Bitstamp,
 				Timestamp:       tr.Timestamp,
 				Price:           tr.Price,
 				Amount:          tr.Amount,
@@ -232,7 +217,9 @@ func (c *BitStampCrawler) handle(pair string) {
 				TradeType:       limit,
 				TransactionType: trans,
 			}
-			c.writer.Write(m)
+			for _, w := range c.writers {
+				w.Write(m)
+			}
 		}
 	} else {
 		log.Errorf("unable to find mapping for %s", pair)

@@ -2,6 +2,7 @@ package storage
 
 import (
 	"cryptoCrawl/crawler"
+	"fmt"
 	"github.com/influxdata/influxdb/client/v2"
 	log "github.com/sirupsen/logrus"
 	"time"
@@ -16,7 +17,11 @@ type InfluxStorageService struct {
 	dataChannel chan crawler.InfluxIngestable
 }
 
-func NewInfluxStorage(host string, dataChan chan crawler.InfluxIngestable) (*InfluxStorageService, error) {
+func NewInfluxStorage(params map[string]string) (DataWriter, error) {
+	host, ok := params["host"]
+	if !ok {
+		return nil, fmt.Errorf("parameter 'host' should be present")
+	}
 	influxCfg := client.HTTPConfig{
 		Timeout: time.Second * 5,
 		Addr:    host,
@@ -31,7 +36,7 @@ func NewInfluxStorage(host string, dataChan chan crawler.InfluxIngestable) (*Inf
 	}
 	return &InfluxStorageService{
 		cli:         cli,
-		dataChannel: dataChan,
+		dataChannel: make(chan crawler.InfluxIngestable, 10000),
 	}, nil
 }
 

@@ -21,7 +21,15 @@ type ElasticStorageService struct {
 	dataChan chan interface{}
 }
 
-func NewESStorage(host string, mappingFile string, dataChan chan interface{}) (*ElasticStorageService, error) {
+func NewESStorage(params map[string]string) (DataWriter, error) {
+	host, ok := params["host"]
+	if !ok {
+		return nil, fmt.Errorf("param 'host' should be present")
+	}
+	mappingFile, ok := params["mapping"]
+	if !ok {
+		return nil, fmt.Errorf("param 'mapping' should be present")
+	}
 	cli, err := elastic.NewClient(elastic.SetSniff(false), elastic.SetURL(host))
 	if err != nil {
 		return nil, err
@@ -41,7 +49,7 @@ func NewESStorage(host string, mappingFile string, dataChan chan interface{}) (*
 	c := &ElasticStorageService{
 		client:   *cli,
 		ctx:      ctx,
-		dataChan: dataChan,
+		dataChan: make(chan interface{}, 10000),
 	}
 	exists, err := cli.IndexExists(indexName).Do(ctx)
 	if exists {

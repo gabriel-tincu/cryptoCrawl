@@ -16,7 +16,6 @@ import (
 
 const (
 	poloniexChartUrl = "https://poloniex.com/public?command=returnTradeHistory&currencyPair=USDT_BTC"
-	poloniex         = "poloniex"
 	poloniexWssURL   = "wss://api.poloniex.com"
 	modify           = "orderBookModify"
 	remove           = "orderBookRemove"
@@ -36,14 +35,14 @@ var (
 )
 
 type PoloniexCrawler struct {
-	writer   DataWriter
+	writers  []DataWriter
 	cli      client.Client
 	pairs    []string
 	state    sync.Map
 	timeDiff int64
 }
 
-func NewPoloniex(writer DataWriter, pairs []string) (*PoloniexCrawler, error) {
+func NewPoloniex(writers []DataWriter, pairs []string) (Crawler, error) {
 	diff, err := getPoloniexTimeDiff()
 	if err != nil {
 		return nil, err
@@ -59,9 +58,8 @@ func NewPoloniex(writer DataWriter, pairs []string) (*PoloniexCrawler, error) {
 		return nil, fmt.Errorf("error creating wamp client: %s", err)
 	}
 	log.Infof("created WAMP client")
-
 	return &PoloniexCrawler{
-		writer:   writer,
+		writers:  writers,
 		pairs:    pairs,
 		cli:      *cli,
 		state:    sync.Map{},
@@ -150,7 +148,7 @@ func (c *PoloniexCrawler) sendData(data interface{}, pair string) error {
 			Amount:    v.Amount,
 			Price:     v.Price,
 			Timestamp: time.Now().Unix() - c.timeDiff,
-			Platform:  poloniex,
+			Platform:  Poloniex,
 			Pair:      pair,
 			Meta:      cancel,
 		}
@@ -161,13 +159,15 @@ func (c *PoloniexCrawler) sendData(data interface{}, pair string) error {
 		} else {
 			return fmt.Errorf("unknown trade type: %s", v.Type)
 		}
-		c.writer.Write(m)
+		for _, w := range c.writers {
+			w.Write(data)
+		}
 		return nil
 	case *Trade:
 		m := TradeMeasurement{
 			Meta:      trade,
 			Pair:      pair,
-			Platform:  poloniex,
+			Platform:  Poloniex,
 			Price:     v.Price,
 			Amount:    v.Amount,
 			TradeType: market,
@@ -180,13 +180,15 @@ func (c *PoloniexCrawler) sendData(data interface{}, pair string) error {
 		} else {
 			return fmt.Errorf("unknown trade type: %s", v.Type)
 		}
-		c.writer.Write(m)
+		for _, w := range c.writers {
+			w.Write(data)
+		}
 		return nil
 	case *Remove:
 		m := CancelMeasurement{
 			Meta:      cancel,
 			Price:     v.Price,
-			Platform:  poloniex,
+			Platform:  Poloniex,
 			Pair:      pair,
 			TimeStamp: time.Now().Unix() - c.timeDiff,
 		}
@@ -197,7 +199,9 @@ func (c *PoloniexCrawler) sendData(data interface{}, pair string) error {
 		} else {
 			return fmt.Errorf("unknown trade type: %s", v.Type)
 		}
-		c.writer.Write(m)
+		for _, w := range c.writers {
+			w.Write(data)
+		}
 		return nil
 	default:
 		return fmt.Errorf("unknown data type: %T", v)

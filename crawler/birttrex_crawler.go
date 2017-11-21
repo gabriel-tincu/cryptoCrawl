@@ -16,21 +16,20 @@ var (
 )
 
 const (
-	wsUrl  = "wss://socket.bittrex.com/signalr"
-	bitrex = "bittrex"
+	wsUrl = "wss://socket.bittrex.com/signalr"
 )
 
 type BittrexCrawler struct {
-	writer  DataWriter
+	writers []DataWriter
 	client  bittrex.Bittrex
 	pairs   []string
 	data    sync.Map
 	timDiff int64
 }
 
-func NewBittrex(writer DataWriter, pairs []string) (BittrexCrawler, error) {
+func NewBittrex(writers []DataWriter, pairs []string) (Crawler, error) {
 	cli := bittrex.New("", "")
-	return BittrexCrawler{writer: writer, pairs: pairs, client: *cli, data: sync.Map{}}, nil
+	return &BittrexCrawler{writers: writers, pairs: pairs, client: *cli, data: sync.Map{}}, nil
 }
 
 func (c *BittrexCrawler) Loop() {
@@ -77,7 +76,7 @@ func (c *BittrexCrawler) handle(pair string, trades []bittrex.Trade) {
 		m := TradeMeasurement{
 			TradeType: limit,
 			Meta:      trade,
-			Platform:  bitrex,
+			Platform:  Bittrex,
 			Pair:      pair,
 			Timestamp: t.Timestamp.Unix(),
 			Amount:    t.Quantity,
@@ -89,6 +88,8 @@ func (c *BittrexCrawler) handle(pair string, trades []bittrex.Trade) {
 			return
 		}
 		m.TransactionType = ttype
-		c.writer.Write(m)
+		for _, w := range c.writers {
+			w.Write(m)
+		}
 	}
 }

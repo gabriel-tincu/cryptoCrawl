@@ -26,25 +26,25 @@ type KrakenCrawler struct {
 	pairs    []string
 	state    sync.Map
 	client   krakenapi.KrakenApi
-	writer   DataWriter
+	writers  []DataWriter
 	timeDiff int64
 }
 
-func NewKraken(writer DataWriter, pairs []string) KrakenCrawler {
+func NewKraken(writers []DataWriter, pairs []string) (Crawler, error) {
 	log.Debugf("creating new kraken crawler for pairs %+v", pairs)
 	cli := krakenapi.New("", "")
 	cl := KrakenCrawler{
-		pairs:  pairs,
-		client: *cli,
-		writer: writer,
-		state:  sync.Map{},
+		pairs:   pairs,
+		client:  *cli,
+		writers: writers,
+		state:   sync.Map{},
 	}
 	there, err := cl.client.Time()
 	if err != nil {
 		panic(err)
 	}
 	cl.timeDiff = there.Unixtime - time.Now().Unix()
-	return cl
+	return &cl, nil
 }
 
 func (c *KrakenCrawler) Loop() {
@@ -92,7 +92,7 @@ func (c *KrakenCrawler) ReadTrades(symbol string, errChan chan error) {
 	for _, t := range trades.Trades {
 		m := TradeMeasurement{
 			Meta:      trade,
-			Platform:  kraken,
+			Platform:  Kraken,
 			Pair:      pairName,
 			Amount:    t.VolumeFloat,
 			Price:     t.PriceFloat,
@@ -143,16 +143,18 @@ func (c *KrakenCrawler) ReadDepth(symbol string, errChan chan error) {
 	lastAsk, lastBid = askTime, bidTime
 	for _, a := range book.Asks {
 		if a.Ts > askTime {
-			data := OrderMeasurement{
+			m := OrderMeasurement{
 				Meta:      order,
 				Timestamp: a.Ts - c.timeDiff,
 				Amount:    a.Amount,
 				Price:     a.Price,
 				Pair:      pairName,
-				Platform:  kraken,
+				Platform:  Kraken,
 				Type:      sell,
 			}
-			c.writer.Write(data)
+			for _, w := range c.writers {
+				w.Write(m)
+			}
 			if a.Ts > lastAsk {
 				lastAsk = a.Ts
 			}
@@ -162,16 +164,18 @@ func (c *KrakenCrawler) ReadDepth(symbol string, errChan chan error) {
 	for _, b := range book.Bids {
 		if b.Ts > bidTime {
 			if b.Ts > askTime {
-				data := OrderMeasurement{
+				m := OrderMeasurement{
 					Meta:      order,
 					Timestamp: b.Ts - c.timeDiff,
 					Amount:    b.Amount,
 					Price:     b.Price,
 					Pair:      pairName,
-					Platform:  kraken,
+					Platform:  Kraken,
 					Type:      buy,
 				}
-				c.writer.Write(data)
+				for _, w := range c.writers {
+					w.Write(m)
+				}
 				if b.Ts > lastBid {
 					lastBid = b.Ts
 				}

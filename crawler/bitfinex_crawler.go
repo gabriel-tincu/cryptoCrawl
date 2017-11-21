@@ -15,18 +15,14 @@ var (
 	}
 )
 
-const (
-	bitfin = "bitfinex"
-)
-
 type BitfinexCrawler struct {
 	client   bitfinex.Client
 	pairs    []string
 	timeDiff int64
-	writer   DataWriter
+	writers  []DataWriter
 }
 
-func NewBitfinex(writer DataWriter, pairs []string) (*BitfinexCrawler, error) {
+func NewBitfinex(writers []DataWriter, pairs []string) (Crawler, error) {
 	cl := bitfinex.NewClient()
 	status, err := cl.Platform.Status()
 	if !status || err != nil {
@@ -36,7 +32,7 @@ func NewBitfinex(writer DataWriter, pairs []string) (*BitfinexCrawler, error) {
 		client:   *cl,
 		pairs:    pairs,
 		timeDiff: 0,
-		writer:   writer,
+		writers:  writers,
 	}
 	return crawler, nil
 }
@@ -114,13 +110,15 @@ func (c *BitfinexCrawler) handleTrade(pair string, data interface{}) {
 				Price:           dpiece[3],
 				Amount:          total,
 				Timestamp:       int64(dpiece[1]),
-				Platform:        bitfin,
+				Platform:        Bitfin,
 				Pair:            pair,
 				Meta:            trade,
 				TransactionType: typ,
 				TradeType:       limit,
 			}
-			c.writer.Write(m)
+			for _, w := range c.writers {
+				w.Write(m)
+			}
 		}
 	} else {
 		log.Errorf("unable to convert data: %+v: %T", data, data)
@@ -148,13 +146,15 @@ func (c *BitfinexCrawler) handleOrder(pair string, data interface{}) {
 			m := OrderMeasurement{
 				Meta:      order,
 				Pair:      pair,
-				Platform:  bitfin,
+				Platform:  Bitfin,
 				Timestamp: time.Now().Unix(),
 				Amount:    amount,
 				Price:     price,
 				Type:      tip,
 			}
-			c.writer.Write(m)
+			for _, w := range c.writers {
+				w.Write(m)
+			}
 		}
 	} else {
 		log.Errorf("unable to convert data: %+v", data)

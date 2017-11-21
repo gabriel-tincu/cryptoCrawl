@@ -34,7 +34,14 @@ const (
 	trade     = "trade"
 	order     = "order"
 	cancel    = "cancel"
-	kraken    = "kraken"
+
+	HitBTC   = "hitbtc"
+	Kraken   = "kraken"
+	Poloniex = "poloniex"
+	Bitstamp = "bitstamp"
+	Bitfin   = "bitfinex"
+	Bittrex  = "bittrex"
+	Binance  = "binance"
 )
 
 type InfluxMeasurement struct {
@@ -97,7 +104,7 @@ func (o *TradeMeasurement) AsInfluxMeasurement() InfluxMeasurement {
 	}
 }
 
-type CrawlerFactory func(writer DataWriter, pairs []string) (Crawler, error)
+type CrawlerFactory func(writers []DataWriter, pairs []string) (Crawler, error)
 
 type Crawler interface {
 	Loop()
@@ -110,10 +117,6 @@ type InfluxIngestable interface {
 type CrawlerConfig struct {
 	Name  string   `json:"name"`
 	Pairs []string `json:"pairs"`
-}
-
-type Config struct {
-	CrawlerCFGS []CrawlerConfig `json:"crawlers"`
 }
 
 type CustomTime struct {
