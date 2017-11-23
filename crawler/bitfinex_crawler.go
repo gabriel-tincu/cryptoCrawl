@@ -2,10 +2,10 @@ package crawler
 
 import (
 	"context"
+	"fmt"
 	"github.com/bitfinexcom/bitfinex-api-go/v2"
 	log "github.com/sirupsen/logrus"
 	"time"
-	"fmt"
 )
 
 var (

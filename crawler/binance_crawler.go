@@ -113,7 +113,7 @@ func (c *BinanceCrawler) Loop() {
 					Pair:            v,
 					Platform:        Binance,
 					TradeType:       limit,
-					Timestamp:       t.EventTimestamp - c.timeDiff,
+					Timestamp:       time.Now().Unix(),
 					TransactionType: typ,
 					Meta:            trade,
 				}
@@ -132,7 +132,7 @@ func (c *BinanceCrawler) Loop() {
 					m := OrderMeasurement{
 						Pair:      v,
 						Meta:      order,
-						Timestamp: o.Timestamp + int64(i) - c.timeDiff,
+						Timestamp: time.Now().Unix() + int64(i),
 						Platform:  Binance,
 						Type:      buy,
 						Price:     b.Price,
@@ -149,7 +149,7 @@ func (c *BinanceCrawler) Loop() {
 					m := OrderMeasurement{
 						Pair:      v,
 						Meta:      order,
-						Timestamp: o.Timestamp + int64(i) - c.timeDiff,
+						Timestamp: time.Now().Unix() + int64(i),
 						Platform:  Binance,
 						Type:      sell,
 						Price:     a.Price,
