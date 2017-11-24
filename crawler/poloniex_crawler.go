@@ -47,11 +47,11 @@ func NewPoloniex(writers []DataWriter, pairs []string) (Crawler, error) {
 	if err != nil {
 		return nil, err
 	}
-	log.Infof("time difference  %d", diff)
+	log.Infof("time difference %d", diff)
 	cfg := client.ClientConfig{
 		Realm:           "realm1",
 		Logger:          log.New(),
-		ResponseTimeout: time.Second * 20,
+		ResponseTimeout: time.Second * 30,
 	}
 	cli, err := client.ConnectNet(poloniexWssURL, cfg)
 	if err != nil {
@@ -145,7 +145,7 @@ func (c *PoloniexCrawler) sendData(data interface{}, pair string) error {
 		m := OrderMeasurement{
 			Amount:    v.Amount,
 			Price:     v.Price,
-			Timestamp: time.Now().Unix() - c.timeDiff,
+			Timestamp: time.Now().Unix(),
 			Platform:  Poloniex,
 			Pair:      pair,
 			Meta:      cancel,
@@ -169,7 +169,7 @@ func (c *PoloniexCrawler) sendData(data interface{}, pair string) error {
 			Price:     v.Price,
 			Amount:    v.Amount,
 			TradeType: market,
-			Timestamp: v.Date.Time.Unix() - c.timeDiff,
+			Timestamp: time.Now().Unix(),
 		}
 		if v.Type == bid || v.Type == buy {
 			m.TransactionType = buy
@@ -188,7 +188,7 @@ func (c *PoloniexCrawler) sendData(data interface{}, pair string) error {
 			Price:     v.Price,
 			Platform:  Poloniex,
 			Pair:      pair,
-			TimeStamp: time.Now().Unix() - c.timeDiff,
+			TimeStamp: time.Now().Unix(),
 		}
 		if v.Type == bid {
 			m.Type = buy

@@ -67,12 +67,6 @@
       "params": {
         "host": "http://localhost:8086"
       }
-    },
-    {
-      "name": "jline",
-      "params": {
-        "path": "/tmp/crypto_data.jl"
-      }
     }
   ]
 }

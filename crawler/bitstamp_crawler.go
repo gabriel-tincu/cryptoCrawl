@@ -132,7 +132,7 @@ func (c *BitStampCrawler) handleTrade(pair string, tr BitstampStreamTrade) {
 	}
 	m := TradeMeasurement{
 		Platform:        Bitstamp,
-		Timestamp:       tr.Timestamp,
+		Timestamp:       time.Now().Unix(),
 		Price:           tr.Price,
 		Amount:          tr.Amount,
 		Meta:            trade,
@@ -151,7 +151,7 @@ func (c *BitStampCrawler) handleOrder(pair string, or BitstampStreamOrder) {
 			Amount:    b.Amount,
 			Price:     b.Price,
 			Pair:      pair,
-			Timestamp: or.Timestamp + int64(i) - c.timeDiff,
+			Timestamp: time.Now().Unix() + int64(i),
 			Meta:      order,
 			Platform:  Bitstamp,
 			Type:      buy,
@@ -165,7 +165,7 @@ func (c *BitStampCrawler) handleOrder(pair string, or BitstampStreamOrder) {
 			Amount:    a.Amount,
 			Price:     a.Price,
 			Pair:      pair,
-			Timestamp: or.Timestamp + int64(i) - c.timeDiff,
+			Timestamp: time.Now().Unix() + int64(i),
 			Meta:      order,
 			Platform:  Bitstamp,
 			Type:      sell,
@@ -209,7 +209,7 @@ func (c *BitStampCrawler) handle(pair string) {
 			}
 			m := TradeMeasurement{
 				Platform:        Bitstamp,
-				Timestamp:       tr.Timestamp,
+				Timestamp:       time.Now().Unix(),
 				Price:           tr.Price,
 				Amount:          tr.Amount,
 				Meta:            trade,

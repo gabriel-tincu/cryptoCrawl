@@ -93,7 +93,7 @@ func (c *BitfinexCrawler) handleTrade(pair string, data interface{}) {
 		return
 	}
 	if fdata, ok := data.([][]float64); ok {
-		for _, dpiece := range fdata {
+		for i, dpiece := range fdata {
 			if len(dpiece) != 4 {
 				log.Errorf("malformed input for trade: %+v", dpiece)
 			}
@@ -106,7 +106,7 @@ func (c *BitfinexCrawler) handleTrade(pair string, data interface{}) {
 			m := TradeMeasurement{
 				Price:           dpiece[3],
 				Amount:          total,
-				Timestamp:       int64(dpiece[1] / 1000),
+				Timestamp:       time.Now().Unix()+int64(i),
 				Platform:        Bitfin,
 				Pair:            pair,
 				Meta:            trade,
@@ -128,7 +128,7 @@ func (c *BitfinexCrawler) handleOrder(pair string, data interface{}) {
 		return
 	}
 	if fdata, ok := data.([][]float64); ok {
-		for _, piece := range fdata {
+		for i, piece := range fdata {
 			if len(piece) != 3 {
 				log.Errorf("malformed input: %+v", piece)
 				continue
@@ -144,7 +144,7 @@ func (c *BitfinexCrawler) handleOrder(pair string, data interface{}) {
 				Meta:      order,
 				Pair:      pair,
 				Platform:  Bitfin,
-				Timestamp: time.Now().Unix(),
+				Timestamp: time.Now().Unix()+int64(i),
 				Amount:    amount,
 				Price:     price,
 				Type:      tip,
