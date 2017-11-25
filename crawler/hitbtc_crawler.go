@@ -148,7 +148,6 @@ func (c *HitBTCCrawler) handleOrder(pair string) {
 			log.Errorf("error retrieving hitbtc orders: %s", err)
 			return
 		}
-		now := time.Now().Unix()
 		for i, a := range orders.Asks {
 			m := OrderMeasurement{
 				Platform:  HitBTC,
@@ -157,7 +156,7 @@ func (c *HitBTCCrawler) handleOrder(pair string) {
 				Pair:      v,
 				Price:     a.Price,
 				Amount:    a.Amount,
-				Timestamp: now - int64(i),
+				Timestamp: Now() - int64(i),
 			}
 			for _, w := range c.writers {
 				w.Write(m)
@@ -171,7 +170,7 @@ func (c *HitBTCCrawler) handleOrder(pair string) {
 				Pair:      v,
 				Price:     b.Price,
 				Amount:    b.Amount,
-				Timestamp: now - int64(i),
+				Timestamp: Now() - int64(i),
 			}
 			for _, w := range c.writers {
 				w.Write(m)

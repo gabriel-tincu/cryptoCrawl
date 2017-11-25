@@ -153,3 +153,7 @@ func ReadJson(resp *http.Response, data interface{}) error {
 	}
 	return json.Unmarshal(bits, data)
 }
+
+func Now() int64 {
+	return time.Now().UnixNano() / int64(time.Millisecond)
+}

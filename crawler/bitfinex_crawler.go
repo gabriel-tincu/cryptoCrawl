@@ -5,7 +5,6 @@ import (
 	"fmt"
 	"github.com/bitfinexcom/bitfinex-api-go/v2"
 	log "github.com/sirupsen/logrus"
-	"time"
 )
 
 var (
@@ -106,7 +105,7 @@ func (c *BitfinexCrawler) handleTrade(pair string, data interface{}) {
 			m := TradeMeasurement{
 				Price:           dpiece[3],
 				Amount:          total,
-				Timestamp:       time.Now().Unix()+int64(i),
+				Timestamp:       Now()-int64(i),
 				Platform:        Bitfin,
 				Pair:            pair,
 				Meta:            trade,
@@ -144,7 +143,7 @@ func (c *BitfinexCrawler) handleOrder(pair string, data interface{}) {
 				Meta:      order,
 				Pair:      pair,
 				Platform:  Bitfin,
-				Timestamp: time.Now().Unix()+int64(i),
+				Timestamp: Now()-int64(i),
 				Amount:    amount,
 				Price:     price,
 				Type:      tip,

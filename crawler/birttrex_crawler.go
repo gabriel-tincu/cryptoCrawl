@@ -69,7 +69,7 @@ func (c *BittrexCrawler) handle(pair string, trades []bittrex.Trade) {
 	} else {
 		lastStoredId = last.(int64)
 	}
-	for _, t := range trades {
+	for i, t := range trades {
 		if lastStoredId == t.OrderUuid {
 			break
 		}
@@ -78,7 +78,7 @@ func (c *BittrexCrawler) handle(pair string, trades []bittrex.Trade) {
 			Meta:      trade,
 			Platform:  Bittrex,
 			Pair:      pair,
-			Timestamp: t.Timestamp.Unix(),
+			Timestamp: Now()-int64(i),
 			Amount:    t.Quantity,
 			Price:     t.Price,
 		}

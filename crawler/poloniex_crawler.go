@@ -145,7 +145,7 @@ func (c *PoloniexCrawler) sendData(data interface{}, pair string) error {
 		m := OrderMeasurement{
 			Amount:    v.Amount,
 			Price:     v.Price,
-			Timestamp: time.Now().Unix(),
+			Timestamp: Now(),
 			Platform:  Poloniex,
 			Pair:      pair,
 			Meta:      cancel,
@@ -169,7 +169,7 @@ func (c *PoloniexCrawler) sendData(data interface{}, pair string) error {
 			Price:     v.Price,
 			Amount:    v.Amount,
 			TradeType: market,
-			Timestamp: time.Now().Unix(),
+			Timestamp: Now(),
 		}
 		if v.Type == bid || v.Type == buy {
 			m.TransactionType = buy
