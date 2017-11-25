@@ -65,7 +65,7 @@ func (c CancelMeasurement) AsInfluxMeasurement() InfluxMeasurement {
 		Measurement: c.Meta,
 		Tags:        map[string]string{"pair": c.Pair, "type": c.Type, "platform": c.Platform},
 		Fields:      map[string]interface{}{"price": c.Price},
-		Timestamp:   time.Unix(c.TimeStamp, 0),
+		Timestamp:   time.Unix(c.TimeStamp/1000, 0),
 	}
 }
 
@@ -87,7 +87,7 @@ func (o OrderMeasurement) AsInfluxMeasurement() InfluxMeasurement {
 		Measurement: o.Meta,
 		Tags:        map[string]string{"pair": o.Pair, "type": o.Type, "platform": o.Platform},
 		Fields:      map[string]interface{}{"price": o.Price, "amount": o.Amount},
-		Timestamp:   time.Unix(o.Timestamp, 0),
+		Timestamp:   time.Unix(o.Timestamp/1000, 0),
 	}
 }
 
@@ -109,7 +109,7 @@ func (o TradeMeasurement) AsInfluxMeasurement() InfluxMeasurement {
 		Measurement: o.Meta,
 		Tags:        map[string]string{"pair": o.Pair, "platform": o.Platform, "trade_type": o.TradeType, "type": o.TransactionType},
 		Fields:      map[string]interface{}{"price": o.Price, "amount": o.Amount},
-		Timestamp:   time.Unix(o.Timestamp, 0),
+		Timestamp:   time.Unix(o.Timestamp/1000, 0),
 	}
 }
 
