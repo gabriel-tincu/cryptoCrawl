@@ -24,7 +24,8 @@
           "type": "float"
         },
         "time": {
-          "type": "date"
+          "type": "date",
+          "format": "strict_date_hour_minute_second"
         }
       }
     }
