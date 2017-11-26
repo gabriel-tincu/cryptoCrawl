@@ -59,13 +59,15 @@
       "name": "elasticsearch",
       "params": {
         "mapping": "mapping.json",
-        "host": "http://localhost:9200"
+        "host": "http://localhost:9200",
+        "period": "7s"
       }
     },
     {
       "name": "influxdb",
       "params": {
-        "host": "http://localhost:8086"
+        "host": "http://localhost:8086",
+        "period": "7s"
       }
     }
   ]
