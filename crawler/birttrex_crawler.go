@@ -32,6 +32,8 @@ func NewBittrex(writers []DataWriter, pairs []string) (Crawler, error) {
 	return &BittrexCrawler{writers: writers, pairs: pairs, client: *cli, data: sync.Map{}}, nil
 }
 
+func (c *BittrexCrawler) Close() {}
+
 func (c *BittrexCrawler) Loop() {
 	t := time.Tick(600 * time.Millisecond)
 	for {

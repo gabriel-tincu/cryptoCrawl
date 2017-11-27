@@ -92,7 +92,6 @@ func (c *ElasticStorageService) Ingest() {
 
 func (c *ElasticStorageService) push(data []interface{}) {
 	if len(data) == 0 {
-		log.Debugf("no data to push, bailing")
 		return
 	}
 	var requests []elastic.BulkableRequest

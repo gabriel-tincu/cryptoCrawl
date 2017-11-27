@@ -67,6 +67,8 @@ func NewPoloniex(writers []DataWriter, pairs []string) (Crawler, error) {
 	}, nil
 }
 
+func (c *PoloniexCrawler) Close() {}
+
 func (c *PoloniexCrawler) Loop() {
 	defer c.cli.Close()
 	for k, v := range poloniexPairMapping {

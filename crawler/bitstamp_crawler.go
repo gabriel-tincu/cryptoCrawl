@@ -78,6 +78,8 @@ func NewBitStamp(writers []DataWriter, pairs []string) (Crawler, error) {
 	}, nil
 }
 
+func (c *BitStampCrawler) Close() {}
+
 func (c *BitStampCrawler) Loop() {
 	for {
 		select {
@@ -112,18 +114,7 @@ func (c *BitStampCrawler) Loop() {
 	}
 }
 
-//deprecated
-func (c *BitStampCrawler) LoopRest() {
-	tick := time.Tick(time.Second * 4)
-	for {
-		select {
-		case <-tick:
-			for _, p := range c.pairs {
-				go c.handle(p)
-			}
-		}
-	}
-}
+
 
 func (c *BitStampCrawler) handleTrade(pair string, tr BitstampStreamTrade) {
 	trans := buy
@@ -176,55 +167,6 @@ func (c *BitStampCrawler) handleOrder(pair string, or BitstampStreamOrder) {
 	}
 }
 
-// deprecated
-func (c *BitStampCrawler) handle(pair string) {
-	if v, ok := bitStampPairMapping[pair]; ok {
-		trades, err := c.Trades(pair)
-		if err != nil {
-			log.Errorf("error retrieving trades: %s", err)
-		}
-		if len(trades) == 0 {
-			log.Infof("no trades retrieved")
-			return
-		}
-		var lastTime int64
-		if lt, ok := c.state.Load(lastTrade + pair); ok {
-			lastTime = lt.(int64)
-		} else {
-			log.Warnf("last timestamp for %s not found", pair)
-			lastTime = 0
-		}
-		c.state.Store(lastTrade+pair, trades[0].Timestamp)
-		if lastTime != 0 {
-			trades = trades[:len(trades)-1]
-		}
-		for _, tr := range trades {
-			if tr.Timestamp < lastTime {
-				log.Infof("bailing out at timestamp %d", lastTime)
-				break
-			}
-			trans := buy
-			if tr.Type == 1 {
-				trans = sell
-			}
-			m := TradeMeasurement{
-				Platform:        Bitstamp,
-				Timestamp:       Now(),
-				Price:           tr.Price,
-				Amount:          tr.Amount,
-				Meta:            trade,
-				Pair:            v,
-				TradeType:       limit,
-				TransactionType: trans,
-			}
-			for _, w := range c.writers {
-				w.Write(m)
-			}
-		}
-	} else {
-		log.Errorf("unable to find mapping for %s", pair)
-	}
-}
 
 func (c *BitStampCrawler) Trades(pair string) ([]BitstampTrade, error) {
 	fullUrl := fmt.Sprintf(bitStampUrlFormat, strings.ToLower(pair))

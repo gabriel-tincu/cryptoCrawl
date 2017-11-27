@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"github.com/bitfinexcom/bitfinex-api-go/v2"
 	log "github.com/sirupsen/logrus"
+	"os"
 )
 
 var (
@@ -19,6 +20,7 @@ type BitfinexCrawler struct {
 	pairs    []string
 	timeDiff int64
 	writers  []DataWriter
+	closeChan chan bool
 }
 
 func NewBitfinex(writers []DataWriter, pairs []string) (Crawler, error) {
@@ -32,11 +34,17 @@ func NewBitfinex(writers []DataWriter, pairs []string) (Crawler, error) {
 		pairs:    pairs,
 		timeDiff: 0,
 		writers:  writers,
+		closeChan: make(chan bool),
 	}
+	crawler.connect()
 	return crawler, nil
 }
 
-func (c *BitfinexCrawler) Loop() {
+func (c *BitfinexCrawler) Close() {
+	c.closeChan <- true
+}
+
+func (c *BitfinexCrawler) connect() {
 	err := c.client.Websocket.Connect()
 	if err != nil {
 		log.Error(err)
@@ -77,10 +85,17 @@ func (c *BitfinexCrawler) Loop() {
 			return
 		}
 	}
+}
+
+func (c *BitfinexCrawler) Loop() {
 	for {
 		select {
 		case <-c.client.Websocket.Done():
-			log.Info("done processing messages")
+			log.Info("client disconnected, reconnecting")
+			c.connect()
+		case <- c.closeChan:
+			log.Info("closing down bitfinex client")
+			c.client.Websocket.Close()
 			return
 		}
 	}
@@ -88,7 +103,6 @@ func (c *BitfinexCrawler) Loop() {
 
 func (c *BitfinexCrawler) handleTrade(pair string, data interface{}) {
 	if _, ok := data.(bitfinex.Heartbeat); ok {
-		log.Debugf("heartbeat received")
 		return
 	}
 	if fdata, ok := data.([][]float64); ok {
@@ -123,7 +137,6 @@ func (c *BitfinexCrawler) handleTrade(pair string, data interface{}) {
 
 func (c *BitfinexCrawler) handleOrder(pair string, data interface{}) {
 	if _, ok := data.(bitfinex.Heartbeat); ok {
-		log.Debugf("heartbeat received")
 		return
 	}
 	if fdata, ok := data.([][]float64); ok {

@@ -129,6 +129,8 @@ func (c *HitBTCCrawler) Trades(pair string) ([]HitBTCTradeResponse, error) {
 	return decoded, nil
 }
 
+func (c *HitBTCCrawler) Close() {}
+
 func (c *HitBTCCrawler) Loop() {
 	ticker := time.Tick(time.Second * 2)
 	for {

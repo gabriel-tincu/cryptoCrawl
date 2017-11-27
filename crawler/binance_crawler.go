@@ -97,6 +97,8 @@ func (c *BinanceCrawler) produceTrade(tradeConn websocket.Conn) {
 	}
 }
 
+func (c *BinanceCrawler) Close() {}
+
 func (c *BinanceCrawler) Loop() {
 	c.produce()
 	for {

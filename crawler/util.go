@@ -117,6 +117,7 @@ type CrawlerFactory func(writers []DataWriter, pairs []string) (Crawler, error)
 
 type Crawler interface {
 	Loop()
+	Close()
 }
 
 type InfluxIngestable interface {

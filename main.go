@@ -9,10 +9,12 @@ import (
 	log "github.com/sirupsen/logrus"
 	"io/ioutil"
 	"os"
+	"time"
 )
 
 func init() {
 	log.SetLevel(log.InfoLevel)
+	log.SetFormatter(&log.JSONFormatter{TimestampFormat:time.RFC3339})
 }
 
 var (

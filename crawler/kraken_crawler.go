@@ -47,6 +47,8 @@ func NewKraken(writers []DataWriter, pairs []string) (Crawler, error) {
 	return &cl, nil
 }
 
+func (c *KrakenCrawler) Close() {}
+
 func (c *KrakenCrawler) Loop() {
 	tradeTimer := time.NewTicker(500 * time.Millisecond)
 	orderTimer := time.NewTicker(500 * time.Millisecond)
