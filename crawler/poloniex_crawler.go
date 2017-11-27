@@ -40,6 +40,7 @@ type PoloniexCrawler struct {
 	pairs    []string
 	state    sync.Map
 	timeDiff int64
+	closeChan chan bool
 }
 
 func NewPoloniex(writers []DataWriter, pairs []string) (Crawler, error) {
@@ -64,10 +65,13 @@ func NewPoloniex(writers []DataWriter, pairs []string) (Crawler, error) {
 		cli:      *cli,
 		state:    sync.Map{},
 		timeDiff: diff,
+		closeChan: make(chan bool),
 	}, nil
 }
 
-func (c *PoloniexCrawler) Close() {}
+func (c *PoloniexCrawler) Close() {
+	c.closeChan <- true
+}
 
 func (c *PoloniexCrawler) Loop() {
 	defer c.cli.Close()
@@ -84,9 +88,12 @@ func (c *PoloniexCrawler) Loop() {
 	sigChan := make(chan os.Signal, 1)
 	signal.Notify(sigChan, os.Interrupt)
 	select {
+	case <- c.closeChan:
+		log.Info("closing down poloniex crwaler")
+		return 
 	case <-sigChan:
 	case <-c.cli.Done():
-		fmt.Println("Router gone, exiting")
+		log.Info("Router gone, exiting")
 		return // router gone, just exit
 	}
 

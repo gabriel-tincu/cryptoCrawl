@@ -28,6 +28,7 @@ type KrakenCrawler struct {
 	client   krakenapi.KrakenApi
 	writers  []DataWriter
 	timeDiff int64
+	closeChan chan bool
 }
 
 func NewKraken(writers []DataWriter, pairs []string) (Crawler, error) {
@@ -38,6 +39,7 @@ func NewKraken(writers []DataWriter, pairs []string) (Crawler, error) {
 		client:  *cli,
 		writers: writers,
 		state:   sync.Map{},
+		closeChan:make(chan bool),
 	}
 	there, err := cl.client.Time()
 	if err != nil {
@@ -47,11 +49,13 @@ func NewKraken(writers []DataWriter, pairs []string) (Crawler, error) {
 	return &cl, nil
 }
 
-func (c *KrakenCrawler) Close() {}
+func (c *KrakenCrawler) Close() {
+	c.closeChan <- true
+}
 
 func (c *KrakenCrawler) Loop() {
-	tradeTimer := time.NewTicker(500 * time.Millisecond)
-	orderTimer := time.NewTicker(500 * time.Millisecond)
+	tradeTimer := time.NewTicker(time.Second)
+	orderTimer := time.NewTicker(time.Second)
 	errChan := make(chan error, 10000)
 	for {
 		select {
@@ -65,6 +69,9 @@ func (c *KrakenCrawler) Loop() {
 			}
 		case err := <-errChan:
 			log.Error(err)
+		case <- c.closeChan:
+			log.Info("closing down crawler")
+			return
 		}
 	}
 

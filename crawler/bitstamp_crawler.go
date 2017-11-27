@@ -37,6 +37,7 @@ type BitStampCrawler struct {
 	client     pusher.Client
 	tradeChan  chan *pusher.Event
 	orderChan  chan *pusher.Event
+	closeChan chan bool
 	timeDiff   int64
 }
 
@@ -75,14 +76,22 @@ func NewBitStamp(writers []DataWriter, pairs []string) (Crawler, error) {
 		tradeChan:  tc,
 		orderChan:  oc,
 		timeDiff:   timeServ - time.Now().Unix(),
+		closeChan:make(chan bool),
 	}, nil
 }
 
-func (c *BitStampCrawler) Close() {}
+func (c *BitStampCrawler) Close() {
+	c.closeChan <- true
+}
 
 func (c *BitStampCrawler) Loop() {
 	for {
 		select {
+		case <- c.closeChan:
+			close(c.tradeChan)
+			close(c.orderChan)
+			log.Info("closing bitstamp crawler")
+			return
 		case t := <-c.tradeChan:
 			for k, v := range bitStampPairMapping {
 				if strings.Contains(t.Channel, strings.ToLower(k)) {

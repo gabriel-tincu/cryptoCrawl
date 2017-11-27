@@ -27,11 +27,17 @@ type HitBTCCrawler struct {
 	client  http.Client
 	state   sync.Map
 	writers []DataWriter
+	closeChan chan bool
 }
 
 func NewHitBTC(writers []DataWriter, pairs []string) (Crawler, error) {
 	cli := http.Client{Timeout: time.Second * 10}
-	return &HitBTCCrawler{pairs: pairs, client: cli, state: sync.Map{}, writers: writers}, nil
+	return &HitBTCCrawler{
+		pairs: pairs,
+		client: cli,
+		state: sync.Map{},
+		writers: writers,
+		closeChan:make(chan bool)}, nil
 }
 
 //unusable due to order of results
@@ -129,7 +135,9 @@ func (c *HitBTCCrawler) Trades(pair string) ([]HitBTCTradeResponse, error) {
 	return decoded, nil
 }
 
-func (c *HitBTCCrawler) Close() {}
+func (c *HitBTCCrawler) Close() {
+	c.closeChan <- true
+}
 
 func (c *HitBTCCrawler) Loop() {
 	ticker := time.Tick(time.Second * 2)
@@ -139,6 +147,9 @@ func (c *HitBTCCrawler) Loop() {
 			for _, p := range c.pairs {
 				go c.handleTrade(p)
 			}
+		case <- c.closeChan:
+			log.Info("closing down hitbtc crawler")
+			return
 		}
 	}
 }

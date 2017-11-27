@@ -25,11 +25,18 @@ type BittrexCrawler struct {
 	pairs   []string
 	data    sync.Map
 	timDiff int64
+	closeChan chan bool
 }
 
 func NewBittrex(writers []DataWriter, pairs []string) (Crawler, error) {
 	cli := bittrex.New("", "")
-	return &BittrexCrawler{writers: writers, pairs: pairs, client: *cli, data: sync.Map{}}, nil
+	return &BittrexCrawler{
+		writers: writers,
+		pairs: pairs,
+		client: *cli,
+		data: sync.Map{},
+		closeChan:make(chan bool),
+		}, nil
 }
 
 func (c *BittrexCrawler) Close() {}
@@ -53,6 +60,9 @@ func (c *BittrexCrawler) Loop() {
 					log.Errorf("unknown mapping: %s", p)
 				}
 			}
+		case <- c.closeChan:
+			log.Info("closing down bittrex crawler")
+			return
 		}
 	}
 }

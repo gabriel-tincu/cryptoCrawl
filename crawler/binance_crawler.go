@@ -9,6 +9,7 @@ import (
 	"strconv"
 	"strings"
 	"time"
+	"vor-commons/src/github.com/jackc/pgx/pgproto3"
 )
 
 var (
@@ -97,13 +98,29 @@ func (c *BinanceCrawler) produceTrade(tradeConn websocket.Conn) {
 	}
 }
 
-func (c *BinanceCrawler) Close() {}
+func (c *BinanceCrawler) Close() {
+
+}
+
+func (c *BinanceCrawler) closeConns() {
+	for _, c := range c.orderConn {
+		c.Close()
+	}
+	for _, c := range c.tradeConn {
+		c.Close()
+	}
+}
 
 func (c *BinanceCrawler) Loop() {
 	c.produce()
 	for {
 		select {
-		case t := <-c.tradeChan:
+		case t, ok := <-c.tradeChan:
+			if !ok {
+				c.closeConns()
+				close(c.orderChan)
+				return
+			}
 			if v, ok := binancePairMapping[t.Pair]; ok {
 				typ := buy
 				if t.IsMaker {
@@ -125,7 +142,12 @@ func (c *BinanceCrawler) Loop() {
 			} else {
 				log.Errorf("unrecognized reverse mapping: %s", t.Pair)
 			}
-		case o := <-c.orderChan:
+		case o, ok := <-c.orderChan:
+			if !ok {
+				c.closeConns()
+				close(c.tradeChan)
+				return
+			}
 			if v, ok := binancePairMapping[o.Pair]; ok {
 				for i, b := range o.Bid {
 					if b.Amount == 0 {
