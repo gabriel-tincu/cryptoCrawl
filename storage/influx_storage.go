@@ -88,6 +88,6 @@ func (i *InfluxStorageService) process(data []crawler.InfluxMeasurement) {
 	if err != nil {
 		log.Errorf("error writing %d points to influx: %s", len(points), err)
 	} else {
-		log.Debugf("successfully written %d bulk points to influx", len(points))
+		log.Infof("successfully written %d bulk points to influx", len(points))
 	}
 }

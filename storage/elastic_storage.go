@@ -102,6 +102,6 @@ func (c *ElasticStorageService) push(data []interface{}) {
 	if err != nil {
 		log.Errorf("error indexing %d docs: %s", len(data), err)
 	} else {
-		log.Debugf("successfully pushed %d bulk datapoints in ES", len(data))
+		log.Infof("successfully pushed %d bulk datapoints in ES", len(data))
 	}
 }
