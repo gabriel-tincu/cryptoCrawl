@@ -203,9 +203,9 @@ type BitstampStreamTrade struct {
 }
 
 type BitstampStreamOrder struct {
-	Timestamp int64       `json:"timestamp,string"`
-	Bids      []OrderData `json:"bids,string"`
-	Asks      []OrderData `json:"asks,string"`
+	Timestamp int64               `json:"timestamp,string"`
+	Bids      []BitstampOrderData `json:"bids,string"`
+	Asks      []BitstampOrderData `json:"asks,string"`
 }
 
 type BitstampTickerResponse struct {
@@ -220,12 +220,12 @@ type BitstampTrade struct {
 	Type      int     `json:"type,string"`
 }
 
-type OrderData struct {
+type BitstampOrderData struct {
 	Price  float64
 	Amount float64
 }
 
-func (o *OrderData) UnmarshalJSON(data []byte) error {
+func (o *BitstampOrderData) UnmarshalJSON(data []byte) error {
 	var str []string
 	err := json.Unmarshal(data, &str)
 	if err != nil {

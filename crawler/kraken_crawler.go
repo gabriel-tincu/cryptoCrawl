@@ -62,10 +62,10 @@ func (c *KrakenCrawler) Loop() {
 	for {
 		for _, p := range c.pairs {
 			select {
-			case <- time.After(500 * time.Millisecond):
+			case <-time.After(500 * time.Millisecond):
 				go c.ReadTrades(p)
 				go c.ReadDepth(p)
-			case <- c.closeChan:
+			case <-c.closeChan:
 				log.Info("closing down kraken crawler")
 				return
 			}

@@ -1,6 +1,6 @@
 {
   "mappings": {
-    "_default_": {
+    "crypto": {
       "properties": {
         "platform": {
           "type": "keyword"

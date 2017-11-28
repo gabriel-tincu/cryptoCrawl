@@ -7,6 +7,7 @@ import (
 	"net/http"
 	"strings"
 	"time"
+	"sync"
 )
 
 type DataWriter interface {
@@ -52,6 +53,9 @@ const (
 	Bitfin   = "bitfinex"
 	Bittrex  = "bittrex"
 	Binance  = "binance"
+	Quione   = "quione"
+	Bitthumb = "bitthumb"
+	Coinone  = "coinone"
 )
 
 type InfluxMeasurement struct {
@@ -153,6 +157,52 @@ func (c *CustomTime) UnmarshalJSON(b []byte) (err error) {
 	return nil
 }
 
+type OrderData struct {
+	Timestamp int64
+	Price float64
+	Amount int64
+	Pair string
+}
+
+type OrderFilter struct {
+	locker sync.Mutex
+	orders []OrderData
+}
+
+func NewOrderFiler() OrderFilter {
+	var orders []OrderData
+	return OrderFilter{
+		orders:orders,
+		locker:sync.Mutex{},
+	}
+}
+
+func (f *OrderFilter) FilterOrders(orderList []OrderData) []OrderData {
+	now := time.Now().UnixNano()
+	f.locker.Lock()
+	defer f.locker.Unlock()
+	var newOrders []OrderData
+	var updatedOrders []OrderData
+	for _, existing := range f.orders {
+		for _, newOrder := range orderList {
+			if existing.Price == newOrder.Price && existing.Amount == newOrder.Amount && existing.Pair == newOrder.Pair {
+				existing.Timestamp = now
+			} else {
+				newOrder.Timestamp = now
+				newOrders = append(newOrders, newOrder)
+				f.orders = append(f.orders, newOrder)
+			}
+		}
+	}
+	for _, old := range f.orders {
+		if old.Timestamp >= now - 2 * int64(time.Hour) {
+			updatedOrders = append(updatedOrders, old)
+		}
+	}
+	f.orders = updatedOrders
+	return newOrders
+}
+
 func ReadJson(resp *http.Response, data interface{}) error {
 	defer resp.Body.Close()
 	if resp.StatusCode != http.StatusOK {
@@ -168,3 +218,25 @@ func ReadJson(resp *http.Response, data interface{}) error {
 func Now() int64 {
 	return time.Now().UnixNano() / int64(time.Millisecond)
 }
+
+func KrwUsd() (float64, error) {
+	resp, err := http.Get("https://api.fixer.io/latest?symbols=USD,KRW")
+	if err != nil {
+		return 0, err
+	}
+	defer resp.Body.Close()
+	exc := &ExchangeAnswer{}
+	err = ReadJson(resp, exc)
+	if err != nil {
+		return 0, err
+	}
+	return exc.Rates.USD / exc.Rates.KRW, nil
+}
+
+type ExchangeAnswer struct {
+	Rates struct {
+		KRW float64 `json:"KRW"`
+		USD float64 `json:"USD"`
+	} `json:"rates"`
+}
+
