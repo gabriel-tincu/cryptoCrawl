@@ -17,7 +17,7 @@ type JsonLineStorage struct {
 func NewJsonLineStorage(params map[string]string) (DataWriter, error) {
 	path, ok := params["path"]
 	if !ok {
-		return nil, fmt.Errorf("parameret 'path' not found in param list: %+v", params)
+		return nil, fmt.Errorf("parameter 'path' not found in param list: %+v", params)
 	}
 	file, err := os.OpenFile(path, os.O_WRONLY|os.O_APPEND|os.O_CREATE, 0644)
 	if err != nil {
@@ -27,7 +27,7 @@ func NewJsonLineStorage(params map[string]string) (DataWriter, error) {
 		file:     *file,
 		dataChan: make(chan interface{}, 10000),
 	}
-	log.Infof("successfully created new JL writer with file %+v", path)
+	log.Infof("successfully created new JL writer with file %s", path)
 	go writer.Ingest()
 	return writer, nil
 }
