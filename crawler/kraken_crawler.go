@@ -1,7 +1,6 @@
 package crawler
 
 import (
-	"fmt"
 	"github.com/beldur/kraken-go-api-client"
 	log "github.com/sirupsen/logrus"
 	"sync"
@@ -60,41 +59,37 @@ func (c *KrakenCrawler) Close() {
 }
 
 func (c *KrakenCrawler) Loop() {
-	errChan := make(chan error, 10000)
 	for {
 		for _, p := range c.pairs {
 			select {
 			case <- time.After(500 * time.Millisecond):
-				c.ReadTrades(p, errChan)
-				c.ReadDepth(p, errChan)
+				go c.ReadTrades(p)
+				go c.ReadDepth(p)
 			case <- c.closeChan:
 				log.Info("closing down kraken crawler")
-				return 
+				return
 			}
 		}
 	}
 
 }
 
-func (c *KrakenCrawler) ReadTrades(symbol string, errChan chan error) {
+func (c *KrakenCrawler) ReadTrades(symbol string) {
 	log.Debugf("reading trade data for pair %s", symbol)
 	pairName := krakenPairMapping[symbol]
 	if pairName == "" {
-		err := fmt.Errorf("unable to find mapping for symbol %s", symbol)
-		errChan <- err
+		log.Warnf("unable to find mapping for symbol %s", symbol)
 		return
 	}
 	var lastCheck int64
 	if lc, ok := c.state.Load(lastTrade + symbol); ok {
 		lastCheck = lc.(int64)
 	} else {
-		errChan <- fmt.Errorf("unable to find last trade timestamp")
-		lastCheck = 0
+		log.Warnf("unable to find last trade timestamp")
 	}
 	trades, err := c.client.Trades(symbol, lastCheck)
 	if err != nil {
-		err = fmt.Errorf("unable to get trade data: %s", err)
-		errChan <- err
+		log.Errorf("unable to get trade data: %s", err)
 		return
 	}
 	for _, t := range trades.Trades {
@@ -120,18 +115,16 @@ func (c *KrakenCrawler) ReadTrades(symbol string, errChan chan error) {
 	c.state.Store(lastTrade+symbol, trades.Last)
 }
 
-func (c *KrakenCrawler) ReadDepth(symbol string, errChan chan error) {
+func (c *KrakenCrawler) ReadDepth(symbol string) {
 	log.Debugf("reading order data for pair %s", symbol)
 	pairName := krakenPairMapping[symbol]
 	if pairName == "" {
-		err := fmt.Errorf("unable to find mapping for symbol %s", symbol)
-		errChan <- err
+		log.Errorf("unable to find mapping for symbol %s", symbol)
 		return
 	}
 	book, err := c.client.Depth(symbol, 0)
 	if err != nil {
-		err := fmt.Errorf("unable to get order data: %s", err)
-		errChan <- err
+		log.Warnf("unable to get order data: %s", err)
 		return
 	}
 	var askTime, bidTime, lastAsk, lastBid int64
@@ -139,13 +132,13 @@ func (c *KrakenCrawler) ReadDepth(symbol string, errChan chan error) {
 	if la, ok := c.state.Load(lastAskTime + symbol); ok {
 		askTime = la.(int64)
 	} else {
-		errChan <- fmt.Errorf("unable to find last ask timestamp")
+		log.Warnf("unable to find last ask timestamp")
 		askTime = 0
 	}
 	if lb, ok := c.state.Load(lastBidTime + symbol); ok {
 		bidTime = lb.(int64)
 	} else {
-		errChan <- fmt.Errorf("unable to find last bid timestamp")
+		log.Warnf("unable to find last bid timestamp")
 		bidTime = 0
 	}
 	lastAsk, lastBid = askTime, bidTime
