@@ -23,6 +23,8 @@ var (
 		krakenapi.XETCZEUR: ETCEUR,
 		krakenapi.XLTCZUSD: LTCUSD,
 		krakenapi.XLTCZEUR: LTCEUR,
+		krakenapi.XXMRZEUR: XMREUR,
+		krakenapi.XXMRZUSD: XMRUSD,
 	}
 )
 
