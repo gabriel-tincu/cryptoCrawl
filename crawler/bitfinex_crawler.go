@@ -5,7 +5,6 @@ import (
 	"fmt"
 	"github.com/bitfinexcom/bitfinex-api-go/v2"
 	log "github.com/sirupsen/logrus"
-	"os"
 )
 
 var (

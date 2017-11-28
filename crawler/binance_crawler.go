@@ -9,7 +9,6 @@ import (
 	"strconv"
 	"strings"
 	"time"
-	"vor-commons/src/github.com/jackc/pgx/pgproto3"
 )
 
 var (
