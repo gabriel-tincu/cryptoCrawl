@@ -7,8 +7,6 @@ import (
 	"github.com/gammazero/nexus/wamp"
 	log "github.com/sirupsen/logrus"
 	"net/http"
-	"os"
-	"os/signal"
 	"strconv"
 	"sync"
 	"time"
@@ -45,6 +43,7 @@ type PoloniexCrawler struct {
 	state     sync.Map
 	timeDiff  int64
 	closeChan chan bool
+	clientCfg client.ClientConfig
 }
 
 func NewPoloniex(writers []DataWriter, pairs []string) (Crawler, error) {
@@ -70,6 +69,7 @@ func NewPoloniex(writers []DataWriter, pairs []string) (Crawler, error) {
 		state:     sync.Map{},
 		timeDiff:  diff,
 		closeChan: make(chan bool),
+		clientCfg: cfg,
 	}, nil
 }
 
@@ -77,30 +77,54 @@ func (c *PoloniexCrawler) Close() {
 	c.closeChan <- true
 }
 
-func (c *PoloniexCrawler) Loop() {
-	defer c.cli.Close()
+func (c *PoloniexCrawler) connect() error {
 	for k, v := range poloniexPairMapping {
 		err := c.cli.Subscribe(k, func(args wamp.List, kwargs wamp.Dict, details wamp.Dict) {
 			details["pair"] = v
 			c.handle(args, kwargs, details)
 		}, nil)
 		if err != nil {
-			log.Fatalf("error subscribing to channel: %s", err)
+			return fmt.Errorf("error subscribing to channel: %s", err)
 		}
 	}
 	log.Infof("all subscriptions done")
-	sigChan := make(chan os.Signal, 1)
-	signal.Notify(sigChan, os.Interrupt)
+	return nil
+}
+
+func (c *PoloniexCrawler) Loop() {
+	defer c.cli.Close()
+	err := c.connect()
+	if err != nil {
+		panic(err)
+	}
 	select {
 	case <-c.closeChan:
 		log.Info("closing down poloniex crwaler")
 		return
-	case <-sigChan:
 	case <-c.cli.Done():
-		log.Info("Router gone, exiting")
-		return // router gone, just exit
+		log.Info("router gone, reconnecting")
+		c.reConnect()
 	}
 
+}
+
+func (c *PoloniexCrawler) reConnect() {
+	for {
+		cli, err := client.ConnectNet(poloniexWssURL, c.clientCfg)
+		if err != nil {
+			log.Errorf("error creating client, retrying: %s", err)
+			time.Sleep(time.Second)
+			continue
+		}
+		c.cli = *cli
+		err = c.connect()
+		if err != nil {
+			log.Errorf("error connecting to endpoints, retrying: %s", err)
+			time.Sleep(time.Second)
+			continue
+		}
+
+	}
 }
 
 func (c *PoloniexCrawler) handle(args wamp.List, kwargs wamp.Dict, details wamp.Dict) {
