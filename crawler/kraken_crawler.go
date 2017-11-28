@@ -60,24 +60,17 @@ func (c *KrakenCrawler) Close() {
 }
 
 func (c *KrakenCrawler) Loop() {
-	tradeTimer := time.NewTicker(time.Second)
-	orderTimer := time.NewTicker(time.Second)
 	errChan := make(chan error, 10000)
 	for {
-		select {
-		case <-tradeTimer.C:
-			for _, p := range c.pairs {
+		for _, p := range c.pairs {
+			select {
+			case <- time.After(500 * time.Millisecond):
 				c.ReadTrades(p, errChan)
-			}
-		case <-orderTimer.C:
-			for _, p := range c.pairs {
 				c.ReadDepth(p, errChan)
+			case <- c.closeChan:
+				log.Info("closing down kraken crawler")
+				return 
 			}
-		case err := <-errChan:
-			log.Error(err)
-		case <-c.closeChan:
-			log.Info("closing down crawler")
-			return
 		}
 	}
 
