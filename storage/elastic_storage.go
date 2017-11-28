@@ -16,9 +16,9 @@ const (
 )
 
 type ElasticStorageService struct {
-	client   elastic.Client
-	ctx      context.Context
-	dataChan chan interface{}
+	client       elastic.Client
+	ctx          context.Context
+	dataChan     chan interface{}
 	tickDuration time.Duration
 }
 
@@ -50,10 +50,10 @@ func NewESStorage(params map[string]string) (DataWriter, error) {
 	}
 	ctx := context.Background()
 	c := &ElasticStorageService{
-		client:   *cli,
-		ctx:      ctx,
-		dataChan: make(chan interface{}, 10000),
-		tickDuration:parsePeriod(params),
+		client:       *cli,
+		ctx:          ctx,
+		dataChan:     make(chan interface{}, 10000),
+		tickDuration: parsePeriod(params),
 	}
 	exists, err := cli.IndexExists(indexName).Do(ctx)
 	if exists {

@@ -18,6 +18,10 @@ var (
 		ETHUSD: ETHUSD,
 		BTCEUR: BTCEUR,
 		ETHEUR: ETHEUR,
+		XRPUSD: XRPUSD,
+		XRPEUR: XRPEUR,
+		LTCUSD: LTCUSD,
+		LTCEUR: LTCEUR,
 	}
 )
 
@@ -37,7 +41,7 @@ type BitStampCrawler struct {
 	client     pusher.Client
 	tradeChan  chan *pusher.Event
 	orderChan  chan *pusher.Event
-	closeChan chan bool
+	closeChan  chan bool
 	timeDiff   int64
 }
 
@@ -76,7 +80,7 @@ func NewBitStamp(writers []DataWriter, pairs []string) (Crawler, error) {
 		tradeChan:  tc,
 		orderChan:  oc,
 		timeDiff:   timeServ - time.Now().Unix(),
-		closeChan:make(chan bool),
+		closeChan:  make(chan bool),
 	}, nil
 }
 
@@ -87,7 +91,7 @@ func (c *BitStampCrawler) Close() {
 func (c *BitStampCrawler) Loop() {
 	for {
 		select {
-		case <- c.closeChan:
+		case <-c.closeChan:
 			close(c.tradeChan)
 			close(c.orderChan)
 			log.Info("closing bitstamp crawler")
@@ -122,8 +126,6 @@ func (c *BitStampCrawler) Loop() {
 		}
 	}
 }
-
-
 
 func (c *BitStampCrawler) handleTrade(pair string, tr BitstampStreamTrade) {
 	trans := buy
@@ -165,7 +167,7 @@ func (c *BitStampCrawler) handleOrder(pair string, or BitstampStreamOrder) {
 			Amount:    a.Amount,
 			Price:     a.Price,
 			Pair:      pair,
-			Timestamp: Now()-int64(i),
+			Timestamp: Now() - int64(i),
 			Meta:      order,
 			Platform:  Bitstamp,
 			Type:      sell,
@@ -175,7 +177,6 @@ func (c *BitStampCrawler) handleOrder(pair string, or BitstampStreamOrder) {
 		}
 	}
 }
-
 
 func (c *BitStampCrawler) Trades(pair string) ([]BitstampTrade, error) {
 	fullUrl := fmt.Sprintf(bitStampUrlFormat, strings.ToLower(pair))

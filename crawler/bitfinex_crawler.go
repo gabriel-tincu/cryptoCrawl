@@ -12,14 +12,17 @@ var (
 	bitfinexPairMapping = map[string]string{
 		bitfinex.BTCUSD: BTCUSD,
 		bitfinex.ETHUSD: ETHUSD,
+		bitfinex.LTCUSD: LTCUSD,
+		bitfinex.XRPUSD: XRPUSD,
+		bitfinex.XMRUSD: XMRUSD,
 	}
 )
 
 type BitfinexCrawler struct {
-	client   bitfinex.Client
-	pairs    []string
-	timeDiff int64
-	writers  []DataWriter
+	client    bitfinex.Client
+	pairs     []string
+	timeDiff  int64
+	writers   []DataWriter
 	closeChan chan bool
 }
 
@@ -30,10 +33,10 @@ func NewBitfinex(writers []DataWriter, pairs []string) (Crawler, error) {
 		return nil, fmt.Errorf("unable to contact platform")
 	}
 	crawler := &BitfinexCrawler{
-		client:   *cl,
-		pairs:    pairs,
-		timeDiff: 0,
-		writers:  writers,
+		client:    *cl,
+		pairs:     pairs,
+		timeDiff:  0,
+		writers:   writers,
 		closeChan: make(chan bool),
 	}
 	crawler.connect()
@@ -93,7 +96,7 @@ func (c *BitfinexCrawler) Loop() {
 		case <-c.client.Websocket.Done():
 			log.Info("client disconnected, reconnecting")
 			c.connect()
-		case <- c.closeChan:
+		case <-c.closeChan:
 			log.Info("closing down bitfinex client")
 			c.client.Websocket.Close()
 			return
@@ -119,7 +122,7 @@ func (c *BitfinexCrawler) handleTrade(pair string, data interface{}) {
 			m := TradeMeasurement{
 				Price:           dpiece[3],
 				Amount:          total,
-				Timestamp:       Now()-int64(i),
+				Timestamp:       Now() - int64(i),
 				Platform:        Bitfin,
 				Pair:            pair,
 				Meta:            trade,
@@ -156,7 +159,7 @@ func (c *BitfinexCrawler) handleOrder(pair string, data interface{}) {
 				Meta:      order,
 				Pair:      pair,
 				Platform:  Bitfin,
-				Timestamp: Now()-int64(i),
+				Timestamp: Now() - int64(i),
 				Amount:    amount,
 				Price:     price,
 				Type:      tip,

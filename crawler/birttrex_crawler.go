@@ -12,6 +12,9 @@ var (
 	bitrexPairMapping = map[string]string{
 		"USDT-ETH": ETHUSD,
 		"USDT-BTC": BTCUSD,
+		"USDT-ETC": ETCUSD,
+		"USDT-LTC": LTCUSD,
+		"USDT-BCC": BCHUSD,
 	}
 )
 
@@ -20,23 +23,23 @@ const (
 )
 
 type BittrexCrawler struct {
-	writers []DataWriter
-	client  bittrex.Bittrex
-	pairs   []string
-	data    sync.Map
-	timDiff int64
+	writers   []DataWriter
+	client    bittrex.Bittrex
+	pairs     []string
+	data      sync.Map
+	timDiff   int64
 	closeChan chan bool
 }
 
 func NewBittrex(writers []DataWriter, pairs []string) (Crawler, error) {
 	cli := bittrex.New("", "")
 	return &BittrexCrawler{
-		writers: writers,
-		pairs: pairs,
-		client: *cli,
-		data: sync.Map{},
-		closeChan:make(chan bool),
-		}, nil
+		writers:   writers,
+		pairs:     pairs,
+		client:    *cli,
+		data:      sync.Map{},
+		closeChan: make(chan bool),
+	}, nil
 }
 
 func (c *BittrexCrawler) Close() {}
@@ -60,7 +63,7 @@ func (c *BittrexCrawler) Loop() {
 					log.Errorf("unknown mapping: %s", p)
 				}
 			}
-		case <- c.closeChan:
+		case <-c.closeChan:
 			log.Info("closing down bittrex crawler")
 			return
 		}
@@ -90,7 +93,7 @@ func (c *BittrexCrawler) handle(pair string, trades []bittrex.Trade) {
 			Meta:      trade,
 			Platform:  Bittrex,
 			Pair:      pair,
-			Timestamp: Now()-int64(i),
+			Timestamp: Now() - int64(i),
 			Amount:    t.Quantity,
 			Price:     t.Price,
 		}

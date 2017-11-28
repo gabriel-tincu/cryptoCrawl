@@ -13,9 +13,9 @@ const (
 )
 
 type InfluxStorageService struct {
-	cli         client.Client
+	cli          client.Client
 	tickDuration time.Duration
-	dataChannel chan crawler.InfluxIngestable
+	dataChannel  chan crawler.InfluxIngestable
 }
 
 func NewInfluxStorage(params map[string]string) (DataWriter, error) {
@@ -36,9 +36,9 @@ func NewInfluxStorage(params map[string]string) (DataWriter, error) {
 		return nil, err
 	}
 	res := &InfluxStorageService{
-		cli:         cli,
-		dataChannel: make(chan crawler.InfluxIngestable, 10000),
-		tickDuration:parsePeriod(params),
+		cli:          cli,
+		dataChannel:  make(chan crawler.InfluxIngestable, 10000),
+		tickDuration: parsePeriod(params),
 	}
 	go res.Ingest()
 	return res, nil

@@ -15,6 +15,10 @@ var (
 	hitBTCPairMapping = map[string]string{
 		ETHUSD: ETHUSD,
 		BTCUSD: BTCUSD,
+		LTCUSD: LTCUSD,
+		ETCUSD: ETCUSD,
+		BCHUSD: BCHUSD,
+		XMRUSD: XMRUSD,
 	}
 )
 
@@ -23,21 +27,21 @@ const (
 )
 
 type HitBTCCrawler struct {
-	pairs   []string
-	client  http.Client
-	state   sync.Map
-	writers []DataWriter
+	pairs     []string
+	client    http.Client
+	state     sync.Map
+	writers   []DataWriter
 	closeChan chan bool
 }
 
 func NewHitBTC(writers []DataWriter, pairs []string) (Crawler, error) {
 	cli := http.Client{Timeout: time.Second * 10}
 	return &HitBTCCrawler{
-		pairs: pairs,
-		client: cli,
-		state: sync.Map{},
-		writers: writers,
-		closeChan:make(chan bool)}, nil
+		pairs:     pairs,
+		client:    cli,
+		state:     sync.Map{},
+		writers:   writers,
+		closeChan: make(chan bool)}, nil
 }
 
 //unusable due to order of results
@@ -147,7 +151,7 @@ func (c *HitBTCCrawler) Loop() {
 			for _, p := range c.pairs {
 				go c.handleTrade(p)
 			}
-		case <- c.closeChan:
+		case <-c.closeChan:
 			log.Info("closing down hitbtc crawler")
 			return
 		}

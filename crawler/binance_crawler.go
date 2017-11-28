@@ -16,6 +16,8 @@ var (
 	binancePairMapping = map[string]string{
 		"BTCUSDT": BTCUSD,
 		"ETHUSDT": ETHUSD,
+		"ETCUSDT": ETCUSD,
+		"BCCUSDT": BCHUSD,
 	}
 )
 
@@ -78,7 +80,7 @@ func (c *BinanceCrawler) produceOrder(orderChan websocket.Conn) {
 	for {
 		err := orderChan.ReadJSON(m)
 		if err != nil {
-			log.Error(err)
+			log.Errorf("error reading from WS: %s", err)
 			continue
 		}
 		c.orderChan <- *m
@@ -91,7 +93,7 @@ func (c *BinanceCrawler) produceTrade(tradeConn websocket.Conn) {
 	for {
 		err := tradeConn.ReadJSON(m)
 		if err != nil {
-			log.Error(err)
+			log.Errorf("error reading from WS: %s", err)
 			continue
 		}
 		c.tradeChan <- *m
@@ -156,7 +158,7 @@ func (c *BinanceCrawler) Loop() {
 					m := OrderMeasurement{
 						Pair:      v,
 						Meta:      order,
-						Timestamp: Now()-int64(i),
+						Timestamp: Now() - int64(i),
 						Platform:  Binance,
 						Type:      buy,
 						Price:     b.Price,
@@ -173,7 +175,7 @@ func (c *BinanceCrawler) Loop() {
 					m := OrderMeasurement{
 						Pair:      v,
 						Meta:      order,
-						Timestamp: Now()-int64(i),
+						Timestamp: Now() - int64(i),
 						Platform:  Binance,
 						Type:      sell,
 						Price:     a.Price,

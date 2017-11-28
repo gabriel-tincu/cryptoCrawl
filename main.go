@@ -14,7 +14,7 @@ import (
 
 func init() {
 	log.SetLevel(log.InfoLevel)
-	log.SetFormatter(&log.JSONFormatter{TimestampFormat:time.RFC3339})
+	log.SetFormatter(&log.JSONFormatter{TimestampFormat: time.RFC3339})
 }
 
 var (

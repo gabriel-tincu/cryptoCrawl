@@ -38,7 +38,7 @@ func (w *JsonLineStorage) Write(d interface{}) {
 
 func (w *JsonLineStorage) Ingest() {
 	var bData []byte
-	ticker := time.NewTicker(10*time.Second)
+	ticker := time.NewTicker(10 * time.Second)
 	defer w.Close()
 	sigChan := make(chan os.Signal, 1)
 	for {

@@ -19,15 +19,19 @@ var (
 		krakenapi.XETHZEUR: ETHEUR,
 		krakenapi.XXBTZUSD: BTCUSD,
 		krakenapi.XXBTZEUR: BTCEUR,
+		krakenapi.XETCXUSD: ETCUSD,
+		krakenapi.XETCZEUR: ETCEUR,
+		krakenapi.XLTCZUSD: LTCUSD,
+		krakenapi.XLTCZEUR: LTCEUR,
 	}
 )
 
 type KrakenCrawler struct {
-	pairs    []string
-	state    sync.Map
-	client   krakenapi.KrakenApi
-	writers  []DataWriter
-	timeDiff int64
+	pairs     []string
+	state     sync.Map
+	client    krakenapi.KrakenApi
+	writers   []DataWriter
+	timeDiff  int64
 	closeChan chan bool
 }
 
@@ -35,11 +39,11 @@ func NewKraken(writers []DataWriter, pairs []string) (Crawler, error) {
 	log.Debugf("creating new kraken crawler for pairs %+v and writers %+v", pairs, writers)
 	cli := krakenapi.New("", "")
 	cl := KrakenCrawler{
-		pairs:   pairs,
-		client:  *cli,
-		writers: writers,
-		state:   sync.Map{},
-		closeChan:make(chan bool),
+		pairs:     pairs,
+		client:    *cli,
+		writers:   writers,
+		state:     sync.Map{},
+		closeChan: make(chan bool),
 	}
 	there, err := cl.client.Time()
 	if err != nil {
@@ -69,7 +73,7 @@ func (c *KrakenCrawler) Loop() {
 			}
 		case err := <-errChan:
 			log.Error(err)
-		case <- c.closeChan:
+		case <-c.closeChan:
 			log.Info("closing down crawler")
 			return
 		}

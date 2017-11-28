@@ -26,6 +26,10 @@ var (
 	poloniexPairMapping = map[string]string{
 		"USDT_ETH": ETHUSD,
 		"USDT_BTC": BTCUSD,
+		"USDT_BCH": BCHUSD,
+		"USDT_XMR": XMRUSD,
+		"USDT_LTC": LTCUSD,
+		"USDT_ETC": LTCUSD,
 	}
 	typeMapping = map[string]interface{}{
 		modify:   &Modify{},
@@ -35,11 +39,11 @@ var (
 )
 
 type PoloniexCrawler struct {
-	writers  []DataWriter
-	cli      client.Client
-	pairs    []string
-	state    sync.Map
-	timeDiff int64
+	writers   []DataWriter
+	cli       client.Client
+	pairs     []string
+	state     sync.Map
+	timeDiff  int64
 	closeChan chan bool
 }
 
@@ -60,11 +64,11 @@ func NewPoloniex(writers []DataWriter, pairs []string) (Crawler, error) {
 	}
 	log.Infof("created WAMP client")
 	return &PoloniexCrawler{
-		writers:  writers,
-		pairs:    pairs,
-		cli:      *cli,
-		state:    sync.Map{},
-		timeDiff: diff,
+		writers:   writers,
+		pairs:     pairs,
+		cli:       *cli,
+		state:     sync.Map{},
+		timeDiff:  diff,
 		closeChan: make(chan bool),
 	}, nil
 }
@@ -88,9 +92,9 @@ func (c *PoloniexCrawler) Loop() {
 	sigChan := make(chan os.Signal, 1)
 	signal.Notify(sigChan, os.Interrupt)
 	select {
-	case <- c.closeChan:
+	case <-c.closeChan:
 		log.Info("closing down poloniex crwaler")
-		return 
+		return
 	case <-sigChan:
 	case <-c.cli.Done():
 		log.Info("Router gone, exiting")
@@ -170,6 +174,7 @@ func (c *PoloniexCrawler) sendData(data interface{}, pair string) error {
 			w.Write(m)
 		}
 		return nil
+		// buy == sell and sell == buy because of the pair ordering
 	case *Trade:
 		m := TradeMeasurement{
 			Meta:      trade,
@@ -181,9 +186,9 @@ func (c *PoloniexCrawler) sendData(data interface{}, pair string) error {
 			Timestamp: Now(),
 		}
 		if v.Type == bid || v.Type == buy {
-			m.TransactionType = buy
-		} else if v.Type == ask || v.Type == sell {
 			m.TransactionType = sell
+		} else if v.Type == ask || v.Type == sell {
+			m.TransactionType = buy
 		} else {
 			return fmt.Errorf("unknown trade type: %s", v.Type)
 		}
@@ -200,9 +205,9 @@ func (c *PoloniexCrawler) sendData(data interface{}, pair string) error {
 			TimeStamp: time.Now().Unix(),
 		}
 		if v.Type == bid {
-			m.Type = buy
-		} else if v.Type == ask {
 			m.Type = sell
+		} else if v.Type == ask {
+			m.Type = buy
 		} else {
 			return fmt.Errorf("unknown trade type: %s", v.Type)
 		}
