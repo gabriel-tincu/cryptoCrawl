@@ -38,7 +38,7 @@ var (
 
 type PoloniexCrawler struct {
 	writers   []DataWriter
-	cli       client.Client
+	cli       *client.Client
 	pairs     []string
 	state     sync.Map
 	timeDiff  int64
@@ -65,7 +65,7 @@ func NewPoloniex(writers []DataWriter, pairs []string) (Crawler, error) {
 	return &PoloniexCrawler{
 		writers:   writers,
 		pairs:     pairs,
-		cli:       *cli,
+		cli:       cli,
 		state:     sync.Map{},
 		timeDiff:  diff,
 		closeChan: make(chan bool),
@@ -116,7 +116,7 @@ func (c *PoloniexCrawler) reConnect() {
 			time.Sleep(time.Second)
 			continue
 		}
-		c.cli = *cli
+		c.cli = cli
 		err = c.connect()
 		if err != nil {
 			log.Errorf("error connecting to endpoints, retrying: %s", err)
@@ -277,7 +277,7 @@ func (m *Modify) Unmarshal(data map[string]string) error {
 	} else if typ == ask {
 		m.Type = sell
 	} else {
-		fmt.Errorf("unknown event type: %s", typ)
+		return fmt.Errorf("unknown event type: %s", typ)
 	}
 	return nil
 }

@@ -6,8 +6,8 @@ import (
 	"io/ioutil"
 	"net/http"
 	"strings"
-	"time"
 	"sync"
+	"time"
 )
 
 type DataWriter interface {
@@ -159,9 +159,9 @@ func (c *CustomTime) UnmarshalJSON(b []byte) (err error) {
 
 type OrderData struct {
 	Timestamp int64
-	Price float64
-	Amount int64
-	Pair string
+	Price     float64
+	Amount    int64
+	Pair      string
 }
 
 type OrderFilter struct {
@@ -172,8 +172,8 @@ type OrderFilter struct {
 func NewOrderFiler() OrderFilter {
 	var orders []OrderData
 	return OrderFilter{
-		orders:orders,
-		locker:sync.Mutex{},
+		orders: orders,
+		locker: sync.Mutex{},
 	}
 }
 
@@ -195,7 +195,7 @@ func (f *OrderFilter) FilterOrders(orderList []OrderData) []OrderData {
 		}
 	}
 	for _, old := range f.orders {
-		if old.Timestamp >= now - 2 * int64(time.Hour) {
+		if old.Timestamp >= now-2*int64(time.Hour) {
 			updatedOrders = append(updatedOrders, old)
 		}
 	}
@@ -239,4 +239,3 @@ type ExchangeAnswer struct {
 		USD float64 `json:"USD"`
 	} `json:"rates"`
 }
-

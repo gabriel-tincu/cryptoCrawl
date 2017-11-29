@@ -200,7 +200,7 @@ func (c *HitBTCCrawler) handleTrade(pair string) {
 	if v, ok := hitBTCPairMapping[pair]; ok {
 		trades, err := c.Trades(pair)
 		if err != nil {
-			log.Error("error retrieving trades: %s", err)
+			log.Errorf("error retrieving trades: %s", err)
 			return
 		}
 		for _, response := range trades {

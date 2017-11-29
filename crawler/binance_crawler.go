@@ -28,8 +28,8 @@ const (
 
 type BinanceCrawler struct {
 	timeDiff  int64
-	tradeConn []websocket.Conn
-	orderConn []websocket.Conn
+	tradeConn []*websocket.Conn
+	orderConn []*websocket.Conn
 	pairs     []string
 	writers   []DataWriter
 	tradeChan chan TradeMessageBinance
@@ -55,12 +55,12 @@ func NewBinance(writers []DataWriter, pairs []string) (Crawler, error) {
 		if err != nil {
 			return nil, err
 		}
-		c.tradeConn = append(c.tradeConn, *tradeConn)
+		c.tradeConn = append(c.tradeConn, tradeConn)
 		orderConn, _, err := websocket.DefaultDialer.Dial(fmt.Sprintf(orderWSSFormat, p), nil)
 		if err != nil {
 			return nil, err
 		}
-		c.orderConn = append(c.orderConn, *orderConn)
+		c.orderConn = append(c.orderConn, orderConn)
 	}
 	return c, nil
 }
@@ -74,7 +74,7 @@ func (c *BinanceCrawler) produce() {
 	}
 }
 
-func (c *BinanceCrawler) produceOrder(orderChan websocket.Conn) {
+func (c *BinanceCrawler) produceOrder(orderChan *websocket.Conn) {
 	m := &OrderMessageBinance{}
 	for {
 		err := orderChan.ReadJSON(m)
@@ -87,7 +87,7 @@ func (c *BinanceCrawler) produceOrder(orderChan websocket.Conn) {
 
 }
 
-func (c *BinanceCrawler) produceTrade(tradeConn websocket.Conn) {
+func (c *BinanceCrawler) produceTrade(tradeConn *websocket.Conn) {
 	m := &TradeMessageBinance{}
 	for {
 		err := tradeConn.ReadJSON(m)
