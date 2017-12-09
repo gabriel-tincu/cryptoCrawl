@@ -8,8 +8,8 @@ import (
 func TestGroup(t *testing.T) {
 	now := time.Now()
 	var testData Series
-	for i:=0; i < 1000; i++ {
-		sample := Sample{10., now.Add(time.Second*time.Duration(i))}
+	for i := 0; i < 1000; i++ {
+		sample := Sample{10., now.Add(time.Second * time.Duration(i))}
 		testData = append(testData, sample)
 	}
 	d, _ := time.ParseDuration("5s")
@@ -37,4 +37,5 @@ func TestGroup(t *testing.T) {
 			t.Fatalf("value should be 0")
 		}
 	}
+	t.Log(testData.RSI(10))
 }

@@ -6,14 +6,14 @@ import (
 
 type Sample struct {
 	Value float64
-	Time time.Time
+	Time  time.Time
 }
 
 type OHLC struct {
-	Time time.Time
-	Open float64
-	High float64
-	Low float64
+	Time  time.Time
+	Open  float64
+	High  float64
+	Low   float64
 	Close float64
 }
 
