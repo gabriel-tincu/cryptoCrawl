@@ -3,7 +3,6 @@ package analysis
 import (
 	"testing"
 	"time"
-	"fmt"
 )
 
 func TestGroup(t *testing.T) {
@@ -16,15 +15,26 @@ func TestGroup(t *testing.T) {
 	d, _ := time.ParseDuration("5s")
 	grouped := testData.GroupByTime(d)
 	if len(grouped) != 200 {
-		t.Logf("length should be 200 but is %d", len(grouped))
-		t.Fail()
+		t.Fatalf("length should be 200 but is %d", len(grouped))
 	}
 	for _, g := range grouped {
 		if len(g) != 5 {
-			t.Logf("length should be 5 but is %d", len(g))
-			t.Fail()
+			t.Fatalf("length should be 5 but is %d", len(g))
 		}
 	}
-	fmt.Println(testData.SMA(10))
-	fmt.Println(testData.EMA(10))
+	for _, s := range testData.SMA(10) {
+		if s.Value != 10 {
+			t.Fatalf("value should be 10")
+		}
+	}
+	for _, s := range testData.EMA(10) {
+		if s.Value != 10 {
+			t.Fatalf("value should be 10")
+		}
+	}
+	for _, s := range testData.MACD(10, 20) {
+		if s.Value != 0 {
+			t.Fatalf("value should be 0")
+		}
+	}
 }

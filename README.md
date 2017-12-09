@@ -7,4 +7,4 @@
  - [ ] move most services to websocket impl
  - [ ] add financial indicators
  - [ ] add inter market trade analisys
- - [ ] add auto config loader
+ - [ ] add auto config loadersu

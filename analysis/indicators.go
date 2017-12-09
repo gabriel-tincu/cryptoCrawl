@@ -2,15 +2,6 @@ package analysis
 
 import "math"
 
-func(s *Series) SMA(periodCount int) Series {
-	resp := Series{}
-	for i := 0; i < len(*s) - periodCount; i++ {
-		slice := (*s)[i:i+periodCount]
-		resp = append(resp, (&slice).Mean())
-	}
-	return resp
-}
-
 func (g *GroupedSeries) OHLC() []OHLC {
 	var response []OHLC
 	var max, min float64
@@ -30,6 +21,25 @@ func (g *GroupedSeries) OHLC() []OHLC {
 		response = append(response, o)
 	}
 	return response
+}
+
+func(s *Series) MACD(short, long int) Series {
+	var response Series
+	longSma := s.SMA(long)
+	shortSma := s.SMA(short)
+	for i := 0; i < len(longSma); i++ {
+		response = append(response, Sample{Time:shortSma[i].Time, Value:shortSma[i].Value-longSma[i].Value})
+	}
+	return response
+}
+
+func(s *Series) SMA(periodCount int) Series {
+	resp := Series{}
+	for i := 0; i < len(*s) - periodCount; i++ {
+		slice := (*s)[i:i+periodCount]
+		resp = append(resp, (&slice).Mean())
+	}
+	return resp
 }
 
 func (s *Series) EMA(periodCount int) Series {
