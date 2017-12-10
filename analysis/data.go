@@ -5,8 +5,9 @@ import (
 )
 
 type Sample struct {
-	Value float64
-	Time  time.Time
+	Volume float64
+	Value  float64
+	Time   time.Time
 }
 
 type OHLC struct {

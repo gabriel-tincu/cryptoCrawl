@@ -59,15 +59,16 @@ func (s *Series) MACD(short, long int) Series {
 	var response Series
 	longSma := s.SMA(long)
 	shortSma := s.SMA(short)
+	diff := len(shortSma) - len(longSma)
 	for i := 0; i < len(longSma); i++ {
-		response = append(response, Sample{Time: shortSma[i].Time, Value: shortSma[i].Value - longSma[i].Value})
+		response = append(response, Sample{Time: shortSma[i+diff].Time, Value: shortSma[i+diff].Value - longSma[i].Value})
 	}
 	return response
 }
 
 func (s *Series) SMA(periodCount int) Series {
 	resp := Series{}
-	for i := 0; i < len(*s)-periodCount; i++ {
+	for i := 0; i < len(*s)-periodCount+1; i++ {
 		slice := (*s)[i : i+periodCount]
 		resp = append(resp, (&slice).Mean())
 	}
@@ -77,14 +78,15 @@ func (s *Series) SMA(periodCount int) Series {
 func (s *Series) EMA(periodCount int) Series {
 	percentage := 2. / float64(periodCount+1)
 	var response Series
-	for i := 0; i < len(*s)-periodCount; i++ {
+	for i := 0; i < len(*s)-periodCount+1; i++ {
 		subSeries := (*s)[i : i+periodCount]
 		if i == 0 {
 			response = append(response, subSeries.Mean())
 			continue
 		}
 		closingSample := subSeries[len(subSeries)-1]
-		response = append(response, Sample{Value: closingSample.Value*percentage + (1-percentage)*response[i-1].Value, Time: subSeries[0].Time})
+		sm := Sample{Value: closingSample.Value*percentage + (1-percentage)*response[i-1].Value, Time: subSeries[0].Time}
+		response = append(response, sm)
 	}
 	return response
 }
