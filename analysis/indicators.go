@@ -43,6 +43,18 @@ func (g *GroupedSeries) OHLC() []OHLC {
 	return response
 }
 
+func(s *Series) ROC() (response Series) {
+	for i:=0;i<len(*s);i++ {
+		if i==0 {
+			continue
+		}
+		current := (*s)[i]
+		previous := (*s)[i-1]
+		response = append(response, Sample{Time:current.Time,Value:100*((current.Value-previous.Value)/previous.Value)})
+	}
+	return
+}
+
 func (s *Series) MACD(short, long int) Series {
 	var response Series
 	longSma := s.SMA(long)

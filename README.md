@@ -6,5 +6,16 @@
  - [X] add config for all crawlers
  - [ ] move most services to websocket impl
  - [ ] add financial indicators
- - [ ] add inter market trade analisys
- - [ ] add auto config loadersu
+    + [X] MACD
+    + [X] ROC
+    + [X] EMA
+    + [X] SMA
+    + [X] RSI
+    + [X] OHLC
+    + [ ] Bollinger
+    + [ ] Stoch
+    + [ ] MFI
+    + [ ] OBV
+    + [ ] CCI
+ - [ ] add inter market symbol analisys
+ - [ ] add auto config loader
